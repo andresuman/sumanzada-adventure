@@ -52,16 +52,22 @@ class ResultScene extends Phaser.Scene {
 
         UI.addCredit(this);
 
-        // Delay evita restart acidental por tecla ainda pressionada no fim do jogo
+        // Delay evita restart acidental por tecla ainda pressionada no fim do jogo; a repetição
+        // automática de uma tecla segurada (event.repeat) também não conta como um novo toque
         this.time.delayedCall(1200, () => {
-            this.input.keyboard.once('keydown', () => this._playAgain());
+            const onKey = (event) => {
+                if (event.repeat) return;
+                this.input.keyboard.off('keydown', onKey);
+                this._playAgain();
+            };
+            this.input.keyboard.on('keydown', onKey);
         });
 
         this.tweens.add({ targets: btn, alpha: 0.5, duration: 550, yoyo: true, repeat: -1 });
     }
 
-    // O personagem escolhido fica no registry, então não precisa ser repassado
+    // Vencendo ou perdendo, jogar de novo volta à escolha de personagem
     _playAgain() {
-        this.scene.start('GameScene');
+        this.scene.start('CharacterSelectScene');
     }
 }

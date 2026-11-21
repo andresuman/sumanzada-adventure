@@ -17,19 +17,23 @@ async function openGame() {
     // Espera o jogo iniciar a primeira cena
     await page.waitForFunction(() => window.__game && window.__game.scene.isActive('TitleScene'), null, { timeout: 15000 });
 
+    // Espera a tela de seleção terminar de montar: isActive fica verdadeiro antes do create(), e só depois
+    // dos cards existirem os atalhos de teclado estão ligados
+    const waitSelectReady = () => page.waitForFunction(() => {
+        const s = window.__game.scene.getScene('CharacterSelectScene');
+        return window.__game.scene.isActive('CharacterSelectScene') && s._cards && s._cards.length > 0;
+    }, null, { timeout: 10000 });
+
     return {
         page, errors, server,
         // Cenas ativas no momento
         scenes: () => page.evaluate(() => window.__game.scene.getScenes(true).map(s => s.scene.key)),
         waitScene: (key, timeout = 10000) => page.waitForFunction(k => window.__game.scene.isActive(k), key, { timeout }),
+        waitSelectReady,
         // Título → seleção → jogo, escolhendo o personagem pelo índice (0 = primeiro card)
         async startGame(characterIndex = 0) {
             await page.keyboard.press('Space');
-            // isActive fica verdadeiro antes do create(): espera os cards existirem para os atalhos já estarem ligados
-            await page.waitForFunction(() => {
-                const s = window.__game.scene.getScene('CharacterSelectScene');
-                return window.__game.scene.isActive('CharacterSelectScene') && s._cards && s._cards.length > 0;
-            }, null, { timeout: 10000 });
+            await waitSelectReady();
             for (let i = 0; i < characterIndex; i++) { await page.keyboard.press('ArrowRight'); await page.waitForTimeout(60); }
             await page.keyboard.press('Enter');
             await page.waitForFunction(() => window.__game.scene.isActive('GameScene') && window.__game.scene.isActive('HUDScene'), null, { timeout: 10000 });

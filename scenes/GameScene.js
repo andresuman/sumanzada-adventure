@@ -15,8 +15,8 @@ const BOTTLE_SCALE = 0.48;
 const BOTTLE_SINK  = 3;
 
 // Personagens jogáveis: lista única em Characters.js (texturas, nomes e item de cada um).
-// A escolha vem de CharacterSelectScene (data.character) ou do registry (Vitória/Game Over reiniciam
-// direto aqui, sem passar pela seleção).
+// A escolha vem de CharacterSelectScene (data.character); o registry guarda a última escolha e serve de
+// reserva se a cena for iniciada sem `character`.
 
 // Parâmetros de spawn das capivaras
 const SPAWN_DELAY_MAX    = 3500; // intervalo inicial entre spawns (ms)
@@ -35,8 +35,8 @@ class GameScene extends Phaser.Scene {
     constructor() { super({ key: 'GameScene' }); }
 
     init(data) {
-        // Personagem escolhido na CharacterSelectScene; o registry cobre o restart de Vitória/Game Over,
-        // que não passam `character`. Chave desconhecida cai no primeiro personagem da lista.
+        // Personagem escolhido na CharacterSelectScene; sem `character`, vale a última escolha no registry.
+        // Chave desconhecida cai no primeiro personagem da lista.
         const wanted     = (data && data.character) || this.registry.get('character');
         this._charCfg    = characterById(wanted);
         this.character   = this._charCfg.key;

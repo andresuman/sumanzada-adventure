@@ -112,6 +112,8 @@ test('reiniciar após o Game Over: o HUD não acumula ouvintes e a nova partida 
     await g.waitScene('GameOverScene');
     await g.page.waitForTimeout(1500);                         // a tecla só vale depois de 1,2 s
     await g.page.keyboard.press('Space');
+    await g.waitSelectReady();                                 // "jogar novamente" leva à escolha de personagem
+    await g.page.keyboard.press('Enter');
     await g.page.waitForFunction(() => window.__game.scene.isActive('GameScene') && window.__game.scene.isActive('HUDScene'), null, { timeout: 8000 });
 
     assert.deepEqual(await count(), [1, 1, 1, 1, 1], 'após reiniciar não pode sobrar ouvinte da partida anterior');
@@ -124,4 +126,60 @@ test('reiniciar após o Game Over: o HUD não acumula ouvintes e a nova partida 
     await g.page.waitForFunction(() => window.__game.scene.getScene('GameScene').collected === 1, null, { timeout: 5000 });
     assert.equal(await g.game(() => window.__game.scene.getScene('HUDScene').collectedTxt.text), '×1');
     assert.deepEqual(g.errors, []);
+}));
+
+// ── Fluxo "jogar novamente": sempre volta à escolha de personagem ─────────────────────────────────────
+
+test('Game Over: o botão JOGAR NOVAMENTE leva à escolha de personagem', () => withGame(async (g) => {
+    await g.startGame(0);
+    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
+    await g.waitScene('GameOverScene');
+    await g.game(() => window.__game.scene.getScene('GameOverScene').children.list
+        .find(o => o.text && o.text.includes('JOGAR NOVAMENTE')).emit('pointerdown'));
+    await g.waitSelectReady();
+    assert.deepEqual(await g.scenes(), ['CharacterSelectScene']);
+    assert.deepEqual(g.errors, []);
+}));
+
+test('Vitória: o botão JOGAR NOVAMENTE leva à escolha de personagem', () => withGame(async (g) => {
+    await g.startGame(0);
+    await g.game(() => {
+        const gs = window.__game.scene.getScene('GameScene');
+        gs.player.setPosition(gs.bottle.x, gs.bottle.y); gs.player.setVelocity(0, 0);
+    });
+    await g.waitScene('WinScene');
+    await g.game(() => window.__game.scene.getScene('WinScene').children.list
+        .find(o => o.text && o.text.includes('JOGAR NOVAMENTE')).emit('pointerdown'));
+    await g.waitSelectReady();
+    assert.deepEqual(await g.scenes(), ['CharacterSelectScene']);
+    assert.deepEqual(g.errors, []);
+}));
+
+test('o último personagem vem pré-selecionado e Enter o inicia (Pitcha, o último card)', () => withGame(async (g) => {
+    const last = CHARACTERS.length - 1;
+    await g.startGame(last);
+    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
+    await g.waitScene('GameOverScene');
+    await g.page.waitForTimeout(1500);
+    await g.page.keyboard.press('Space');
+    await g.waitSelectReady();
+    assert.equal(await g.game(() => window.__game.scene.getScene('CharacterSelectScene')._selected), last);
+    await g.page.keyboard.press('Enter');
+    await g.page.waitForFunction(() => window.__game.scene.isActive('GameScene'), null, { timeout: 8000 });
+    assert.equal(await g.game(() => window.__game.scene.getScene('GameScene').character), CHARACTERS[last]);
+}));
+
+test('Enter segurado na tela de fim não pula a escolha de personagem (só repetições de tecla chegam)', () => withGame(async (g) => {
+    await g.startGame(0);
+    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
+    await g.waitScene('GameOverScene');
+    await g.page.waitForTimeout(1500);
+    await g.page.keyboard.down('Enter');                       // 1º toque: leva à seleção
+    await g.waitSelectReady();
+    for (let i = 0; i < 4; i++) { await g.page.keyboard.down('Enter'); await g.page.waitForTimeout(40); }   // repetições
+    await g.page.waitForTimeout(300);
+    assert.deepEqual(await g.scenes(), ['CharacterSelectScene'], 'a repetição de tecla iniciou o jogo sem escolher');
+    await g.page.keyboard.up('Enter');
+    await g.page.keyboard.press('Enter');                      // um toque novo, sim, inicia
+    await g.page.waitForFunction(() => window.__game.scene.isActive('GameScene'), null, { timeout: 8000 });
 }));

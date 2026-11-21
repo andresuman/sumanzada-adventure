@@ -18,7 +18,8 @@ seu personagem e chegue até a garrafa de água antes que o tempo acabe.
 | Pular | ↑, W ou Espaço | ▲ |
 | Escolher personagem | ← / → e Enter | toque no card e em COMEÇAR AVENTURA |
 
-- **Objetivo:** chegar à garrafa de água no fim da fase antes de 60 segundos.
+- **Objetivo:** chegar à garrafa de água no fim da fase antes de 60 segundos. Ao terminar (vencendo ou perdendo),
+  **JOGAR NOVAMENTE** volta à escolha de personagem, já com o último que você usou selecionado.
 - **Capivaras:** pule por cima. Cada passagem limpa (você no ar quando ela passa) vale **+100 × combo**, e o
   combo cresce a cada acerto seguido. Capivaras aparecem sem parar e ficam mais rápidas com o tempo.
 - **Pisar em cima de uma capivara** perde os pontos do combo atual e zera o multiplicador.

@@ -1,7 +1,6 @@
-// Tela de escolha de personagem — entre TitleScene e GameScene.
-// O jogo é o mesmo para todos; só o personagem muda (sprite + animação).
-// A escolha é salva no registry para sobreviver ao restart de GameOver/WinScene,
-// que voltam direto para GameScene sem passar por aqui.
+// Tela de escolha de personagem — entre TitleScene e GameScene, e também o destino de "jogar novamente"
+// nas telas de Vitória e Game Over. O jogo é o mesmo para todos; só o personagem muda (sprite + animação).
+// A última escolha fica no registry e vem pré-selecionada na próxima vez.
 class CharacterSelectScene extends Phaser.Scene {
     constructor() { super({ key: 'CharacterSelectScene' }); }
 
@@ -119,11 +118,12 @@ class CharacterSelectScene extends Phaser.Scene {
         // Teclado: setas trocam o personagem, Enter começa, Esc volta
         this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + this._count - 1) % this._count));
         this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % this._count));
-        this.input.keyboard.on('keydown-ENTER', () => this._startGame());
+        // Enter segurado na tela anterior chega aqui como repetição (event.repeat): não pode pular a escolha
+        this.input.keyboard.on('keydown-ENTER', (event) => { if (!event.repeat) this._startGame(); });
         this.input.keyboard.on('keydown-ESC',   () => this.scene.start('TitleScene'));
 
-        // Primeiro personagem pré-selecionado
-        this._select(0);
+        // Vem pré-selecionado o último personagem jogado (ou o primeiro, na 1ª vez)
+        this._select(Math.max(0, cards.findIndex(c => c.key === this.registry.get('character'))));
     }
 
     _select(i) {
@@ -140,8 +140,7 @@ class CharacterSelectScene extends Phaser.Scene {
 
     _startGame() {
         const key = this._cards[this._selected].key;
-        // Salva no registry: GameOver/WinScene reiniciam direto na GameScene,
-        // então a escolha precisa sobreviver sem passar por esta cena.
+        // Guarda a escolha para pré-selecionar o mesmo personagem na próxima volta a esta tela
         this.registry.set('character', key);
         this.scene.start('GameScene', { character: key });
     }

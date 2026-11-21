@@ -121,11 +121,13 @@ BootScene → TitleScene → CharacterSelectScene → GameScene + HUDScene (para
                                                      ↓
                                         WinScene  ou  GameOverScene
                                                      ↓
-                                   GameScene (restart direto, mesmo personagem)
+                                   CharacterSelectScene (JOGAR NOVAMENTE; vem com o último personagem pré-selecionado)
 ```
 
-- A escolha do personagem fica em `this.registry.get('character')` para sobreviver ao restart de Vitória/Game Over,
-  que voltam direto à `GameScene` (sem passar `character`).
+- Vitória e Game Over (`ResultScene._playAgain()`) levam de volta à `CharacterSelectScene`. A última escolha fica em
+  `this.registry.get('character')` e vem pré-selecionada; a `GameScene` usa o registry se iniciada sem `character`.
+- Teclas: Enter na seleção e qualquer tecla nas telas de fim **ignoram `event.repeat`**; uma tecla segurada não
+  pode pular a escolha de personagem nem reiniciar sozinha.
 - `HUDScene` é lançada com `this.scene.launch('HUDScene', { gameScene: this })` e escuta eventos da `GameScene`.
 - Ao terminar: `this.scene.stop('HUDScene')` antes de iniciar Vitória/Game Over.
 - O emissor de eventos da `GameScene` sobrevive ao reinício: **todo `on` no HUD tem `off` no shutdown**.
