@@ -13,7 +13,7 @@ const CHARACTERS = [
     { key: 'rafinha', name: 'RAFINHA', feminine: false, collectible: 'conniff' },
     { key: 'marcela', name: 'PITU',    feminine: true,  collectible: 'kitty' },
     { key: 'marilia', name: 'PITCHA',  feminine: true,  collectible: 'yarn' },
-    { key: 'solange', name: 'GÊ',      feminine: true,  collectible: 'coin' },   // item próprio ainda não existe: usa a moeda
+    { key: 'solange', name: 'GÊ',      feminine: true,  collectible: 'spade' }
 ];
 
 const WALK_FRAMES = 4;

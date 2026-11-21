@@ -90,6 +90,18 @@ const COLLECTIBLE_TYPES = {
         // Arpejo curto; cada nota é [frequência Hz, atraso em s]
         sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
     },
+    spade: {
+        texture: 'item_spade',     // chave da textura no Phaser
+        label:   'ás de espadas',
+        image:   'assets/item_spade.png', // PNG carregado em BootScene
+        scale:   0.25,             // 96px -> 24px de largura no jogo (a carta é mais alta que os outros itens)
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#dddddd',        // cinza claro — cor do texto flutuante e do contador no HUD
+        spin:    false,            // carta não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
 };
 
 // Grupos de itens ao longo da fase (x em px do mundo).

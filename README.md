@@ -42,7 +42,7 @@ A escolha muda o personagem e o item que ele coleta; o jogo é o mesmo para todo
 | Rafinha (vai de carrinho) | rosto do Ray Conniff |
 | Pitu | cabeça da Hello Kitty |
 | Pitcha | novelo de lã |
-| Gê | moeda (provisório) |
+| Gê | ás de espadas |
 
 ## Rodar localmente
 
