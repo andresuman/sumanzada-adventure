@@ -5,16 +5,16 @@ const fs = require('fs');
 const path = require('path');
 const { ROOT, loadScripts } = require('../lib/project');
 
-const g = loadScripts(['Collectibles.js', 'scenes/GameScene.js']);
+const g = loadScripts(['Characters.js', 'Collectibles.js', 'scenes/GameScene.js']);
 const types = g.get('COLLECTIBLE_TYPES');
 const layout = g.get('COLLECTIBLE_LAYOUT');
 const characters = g.get('CHARACTERS');
-const GROUND_Y = g.get('GROUND_Y'), JUMP_VY = g.get('JUMP_VY'), LEVEL_WIDTH = g.get('LEVEL_WIDTH');
+const GROUND_Y = g.get('GROUND_Y'), JUMP_VY = g.get('JUMP_VY'), WORLD_WIDTH = g.get('WORLD_WIDTH');
 const GRAVITY = 700;   // game.js: physics.arcade.gravity.y
 
 test('todo personagem aponta para um tipo de item que existe', () => {
-    for (const [name, cfg] of Object.entries(characters)) {
-        assert.ok(types[cfg.collectible], `${name}: collectible "${cfg.collectible}" não existe em COLLECTIBLE_TYPES`);
+    for (const c of characters) {
+        assert.ok(types[c.collectible], `${c.key}: collectible "${c.collectible}" não existe em COLLECTIBLE_TYPES`);
     }
 });
 
@@ -36,7 +36,7 @@ test('texturas dos tipos de item não colidem entre si', () => {
 test('os grupos ficam dentro da fase e antes da garrafa', () => {
     const points = layout.flatMap(grp => g.get(`collectibleLayoutPoints(${JSON.stringify(grp)}, ${GROUND_Y})`));
     assert.ok(points.length > 0);
-    for (const p of points) assert.ok(p.x > 0 && p.x < LEVEL_WIDTH - 100, `item fora da fase em x=${p.x}`);
+    for (const p of points) assert.ok(p.x > 0 && p.x < WORLD_WIDTH - 100, `item fora da fase em x=${p.x}`);
 });
 
 // O corpo em pé chega a ~68 px (frame 302 px × PLAYER_SCALE 0.28 × 0.80) e o pulo a v²/(2g).

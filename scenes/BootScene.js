@@ -2,39 +2,12 @@ class BootScene extends Phaser.Scene {
     constructor() { super({ key: 'BootScene' }); }
 
     preload() {
-        // Personagens jogáveis da família (idle + 4 frames de caminhada)
-        this.load.image('andre_idle',  'assets/andre_idle.png');
-        this.load.image('andre_walk1', 'assets/andre_walk1.png');
-        this.load.image('andre_walk2', 'assets/andre_walk2.png');
-        this.load.image('andre_walk3', 'assets/andre_walk3.png');
-        this.load.image('andre_walk4', 'assets/andre_walk4.png');
-
-        this.load.image('thais_idle',  'assets/thais_idle.png');
-        this.load.image('thais_walk1', 'assets/thais_walk1.png');
-        this.load.image('thais_walk2', 'assets/thais_walk2.png');
-        this.load.image('thais_walk3', 'assets/thais_walk3.png');
-        this.load.image('thais_walk4', 'assets/thais_walk4.png');
-
-        // Rafinha: não anda a pé, vai no carrinho (mesmo padrão: idle + 4 frames do carro)
-        this.load.image('rafinha_idle',  'assets/rafinha_idle.png');
-        this.load.image('rafinha_walk1', 'assets/rafinha_walk1.png');
-        this.load.image('rafinha_walk2', 'assets/rafinha_walk2.png');
-        this.load.image('rafinha_walk3', 'assets/rafinha_walk3.png');
-        this.load.image('rafinha_walk4', 'assets/rafinha_walk4.png');
-
-        // Marcela: camiseta preta florida, calça jeans (idle + 4 frames de caminhada)
-        this.load.image('marcela_idle',  'assets/marcela_idle.png');
-        this.load.image('marcela_walk1', 'assets/marcela_walk1.png');
-        this.load.image('marcela_walk2', 'assets/marcela_walk2.png');
-        this.load.image('marcela_walk3', 'assets/marcela_walk3.png');
-        this.load.image('marcela_walk4', 'assets/marcela_walk4.png');
-
-        // Marília: vestidinho azul-marinho com listras vermelha e branca (idle + 4 frames de caminhada)
-        this.load.image('marilia_idle',  'assets/marilia_idle.png');
-        this.load.image('marilia_walk1', 'assets/marilia_walk1.png');
-        this.load.image('marilia_walk2', 'assets/marilia_walk2.png');
-        this.load.image('marilia_walk3', 'assets/marilia_walk3.png');
-        this.load.image('marilia_walk4', 'assets/marilia_walk4.png');
+        // Personagens jogáveis: <chave>_idle.png + <chave>_walk1..4.png (lista em Characters.js).
+        // O Rafinha não anda a pé: vai no carrinho, e o "andar" é o carro rolando.
+        CHARACTERS.forEach(c => {
+            const t = characterTextures(c.key);
+            [t.idle, ...t.walk].forEach(name => this.load.image(name, `assets/${name}.png`));
+        });
 
         // Inimigos
         this.load.image('capy_walk1', 'assets/capy_walk1.png');
@@ -43,7 +16,7 @@ class BootScene extends Phaser.Scene {
         this.load.image('capy_flat1', 'assets/capy_flat1.png');
         this.load.image('capy_flat2', 'assets/capy_flat2.png');
 
-        // Cenário e itens
+        // Cenário e objetivo
         this.load.image('ground2', 'assets/ground2.png');
         this.load.image('bottle2', 'assets/bottle2.png');
         this.load.image('background2', 'assets/background2.png');
@@ -53,67 +26,26 @@ class BootScene extends Phaser.Scene {
             if (t.image) this.load.image(t.texture, t.image);
         });
 
-        // Coração gerado via canvas (síncrono)
+        // Texturas geradas por código (síncrono)
         this.makeHeart();
         this.makeCollectibles();
     }
 
     create() {
-        // Animações do André 
-        this.anims.create({ key: 'andre-idle',
-            frames: [{ key:'andre_idle' }], frameRate:1, repeat:-1 });
-        this.anims.create({ key: 'andre-walk',
-            frames: [
-                { key:'andre_walk1' }, { key:'andre_walk2' },
-                { key:'andre_walk3' }, { key:'andre_walk4'  }
-            ], frameRate:8, repeat:-1 });
+        CHARACTERS.forEach(c => {
+            const t = characterTextures(c.key);
+            this.anims.create({ key: t.idleAnim, frames: [{ key: t.idle }], frameRate: 1, repeat: -1 });
+            this.anims.create({ key: t.walkAnim, frames: t.walk.map(key => ({ key })), frameRate: 8, repeat: -1 });
+        });
 
-        // Animações da Thais 
-        this.anims.create({ key: 'thais-idle',
-            frames: [{ key:'thais_idle' }], frameRate:1, repeat:-1 });
-        this.anims.create({ key: 'thais-walk',
-            frames: [
-                { key:'thais_walk1' }, { key:'thais_walk2' },
-                { key:'thais_walk3' }, { key:'thais_walk4'  }
-            ], frameRate:8, repeat:-1 });
-
-        // Animações do Rafinha (o "andar" é o carrinho rolando)
-        this.anims.create({ key: 'rafinha-idle',
-            frames: [{ key:'rafinha_idle' }], frameRate:1, repeat:-1 });
-        this.anims.create({ key: 'rafinha-walk',
-            frames: [
-                { key:'rafinha_walk1' }, { key:'rafinha_walk2' },
-                { key:'rafinha_walk3' }, { key:'rafinha_walk4'  }
-            ], frameRate:8, repeat:-1 });
-
-        // Animações da Marcela
-        this.anims.create({ key: 'marcela-idle',
-            frames: [{ key:'marcela_idle' }], frameRate:1, repeat:-1 });
-        this.anims.create({ key: 'marcela-walk',
-            frames: [
-                { key:'marcela_walk1' }, { key:'marcela_walk2' },
-                { key:'marcela_walk3' }, { key:'marcela_walk4'  }
-            ], frameRate:8, repeat:-1 });
-
-        // Animações da Marília
-        this.anims.create({ key: 'marilia-idle',
-            frames: [{ key:'marilia_idle' }], frameRate:1, repeat:-1 });
-        this.anims.create({ key: 'marilia-walk',
-            frames: [
-                { key:'marilia_walk1' }, { key:'marilia_walk2' },
-                { key:'marilia_walk3' }, { key:'marilia_walk4'  }
-            ], frameRate:8, repeat:-1 });
-
-        // Animações da capivara
         this.anims.create({ key: 'capy-walk',
             frames: [
-                { key:'capy_walk1' }, { key:'capy_walk2' }, { key:'capy_walk3' }
-            ], frameRate:6, repeat:-1 });
+                { key: 'capy_walk1' }, { key: 'capy_walk2' }, { key: 'capy_walk3' }
+            ], frameRate: 6, repeat: -1 });
 
         this.scene.start('TitleScene');
     }
 
-    // ── Coração para HUD (canvas síncrono) ───────────────────────────────────
     // Textura dos itens desenhados por código (sem PNG) — ver Collectibles.js
     makeCollectibles() {
         Object.values(COLLECTIBLE_TYPES).forEach(t => {
@@ -125,6 +57,7 @@ class BootScene extends Phaser.Scene {
         });
     }
 
+    // Coração do HUD (canvas síncrono, pixel art 7×6 ampliada 2×)
     makeHeart() {
         const tex = this.textures.createCanvas('heart', 14, 12);
         const ctx = tex.getContext();
@@ -135,7 +68,7 @@ class BootScene extends Phaser.Scene {
         const scale = 2;
         rows.forEach((row, y) => {
             row.split('').forEach((ch, x) => {
-                if (ch === 'R') { ctx.fillStyle='#e83030'; ctx.fillRect(x*scale,y*scale,scale,scale); }
+                if (ch === 'R') { ctx.fillStyle = '#e83030'; ctx.fillRect(x * scale, y * scale, scale, scale); }
             });
         });
         tex.refresh();

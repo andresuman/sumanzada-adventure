@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { ROOT, read } = require('../lib/project');
+const { ROOT, read, loadScripts } = require('../lib/project');
 const { loadPng } = require('../lib/png');
 const { semiTransparentCount, enclosedHoles, opaqueGapStrips } = require('../lib/sprites');
 
@@ -20,7 +20,14 @@ const BASELINE_FILE = path.join(__dirname, 'sprite-baseline.json');
 function referencedAssets() {
     // Remove comentários de linha: exemplos como 'assets/arquivo.png' não são referências reais
     const code = (read('scenes/BootScene.js') + '\n' + read('Collectibles.js')).replace(/\/\/.*$/gm, '');
-    return new Set([...code.matchAll(/['"](assets\/[^'"]+)['"]/g)].map(m => m[1]));
+    const literal = [...code.matchAll(/['"](assets\/[^'"]+)['"]/g)].map(m => m[1]);
+    // Os PNGs dos personagens são carregados em laço a partir de Characters.js
+    const g = loadScripts(['Characters.js']);
+    const perCharacter = g.get('CHARACTERS').flatMap(c => {
+        const t = g.get(`characterTextures('${c.key}')`);
+        return [t.idle, ...t.walk].map(name => `assets/${name}.png`);
+    });
+    return new Set([...literal, ...perCharacter]);
 }
 
 test('todo asset referenciado no código existe', () => {

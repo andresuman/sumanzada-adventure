@@ -3,6 +3,7 @@ class HUDScene extends Phaser.Scene {
 
     init(data) {
         this.gameScene = data.gameScene;
+        this._handlers = [];
     }
 
     create() {
@@ -42,31 +43,42 @@ class HUDScene extends Phaser.Scene {
         this.add.text(W - 4, 4, 'TEMPO', style).setOrigin(1, 0);
         this.timeTxt = this.add.text(W - 4, 14, '01:00', style).setOrigin(1, 0);
 
-        // ── Estado inicial: lê direto do gameScene para refletir dados carregados de fase anterior ──
+        // ── Estado inicial: lê direto do gameScene ──
         // Eventos só disparam em mudanças — sem isso pontos, vidas e tempo ficam errados até o primeiro evento.
         this.scoreTxt.setText(String(this.gameScene.score).padStart(5, '0'));
         this.heartIcons.forEach((h, i) => h.setAlpha(i < this.gameScene.lives ? 1 : 0.2));
         this.timeTxt.setText(this._fmt(this.gameScene.gameTime));
 
         // ── Ouvir eventos do GameScene ────────────────────────────────────────
-        this.gameScene.events.on('scoreChanged', (v) => {
+        // O emissor do GameScene sobrevive ao reinício da partida: sem remover os ouvintes no
+        // shutdown eles se acumulam (e atualizam textos já destruídos).
+        const on = (event, fn) => {
+            this.gameScene.events.on(event, fn);
+            this._handlers.push([event, fn]);
+        };
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this._handlers.forEach(([event, fn]) => this.gameScene.events.off(event, fn));
+            this._handlers = [];
+        });
+
+        on('scoreChanged', (v) => {
             this.scoreTxt.setText(String(v).padStart(5, '0'));
         });
 
-        this.gameScene.events.on('collectedChanged', (v) => {
+        on('collectedChanged', (v) => {
             if (this.collectedTxt) this.collectedTxt.setText(`×${v}`);
         });
 
-        this.gameScene.events.on('livesChanged', (v) => {
+        on('livesChanged', (v) => {
             this.heartIcons.forEach((h, i) => h.setAlpha(i < v ? 1 : 0.2));
         });
 
-        this.gameScene.events.on('timeChanged', (v) => {
+        on('timeChanged', (v) => {
             this.timeTxt.setText(this._fmt(v));
             this.timeTxt.setColor(v <= 10 ? '#ff4444' : '#ffffff');
         });
 
-        this.gameScene.events.on('comboChanged', (v) => {
+        on('comboChanged', (v) => {
             // Mostra quantos acertos seguidos (combo 1 = zero acertos encadeados)
             const seguidos = v - 1;
             this.comboTxt.setText(`★${seguidos}`);

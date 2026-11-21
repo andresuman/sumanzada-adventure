@@ -32,3 +32,26 @@ test('HighScore: recorde novo, igual e menor', () => {
 function loadHighScore(localStorage) {
     return require('../lib/project').loadScripts(['HighScore.js'], { localStorage });
 }
+
+test('HighScore: armazenamento que lança erro não derruba o jogo (vale em memória)', () => {
+    const broken = {
+        getItem() { throw new Error('SecurityError: storage bloqueado'); },
+        setItem() { throw new Error('QuotaExceededError'); },
+    };
+    const { window } = loadHighScore(broken);
+    assert.equal(window.HighScore.get(), 0);
+    assert.equal(window.HighScore.check(300), true);    // não lança
+    assert.equal(window.HighScore.get(), 300);          // lembra na sessão
+    assert.equal(window.HighScore.check(200), false);
+});
+
+test('HighScore: valor corrompido no storage vira 0 (não NaN) e o recorde volta a salvar', () => {
+    const store = new Map([['sumanzada-highscore', 'lixo']]);
+    const localStorage = { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)) };
+    const { window } = loadHighScore(localStorage);
+    assert.equal(window.HighScore.get(), 0);
+    assert.equal(window.HighScore.check(10), true);
+    assert.equal(store.get('sumanzada-highscore'), '10');
+    assert.equal(window.HighScore.check(Number.NaN), false);
+    assert.equal(window.HighScore.check(-5), false);
+});

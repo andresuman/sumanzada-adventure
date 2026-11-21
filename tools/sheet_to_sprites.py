@@ -18,6 +18,7 @@ Para uma pose parada vinda de outra imagem, use --idle-image (se já tiver fundo
 Dependências só do desenvolvimento: o jogo continua sem build e sem npm/pip.
 """
 import argparse
+import json
 from collections import deque
 
 import numpy as np
@@ -26,8 +27,9 @@ from PIL import Image, ImageFilter
 GREEN = (40, 200, 60, 255)
 
 
-def find_split(arr, axis_len, probe, fallback):
-    """Posição onde o fundo muda bruscamente (ex.: cinza em cima, branco embaixo); senão, o meio."""
+def find_split(probe, fallback):
+    """Posição onde o fundo muda bruscamente (ex.: cinza em cima, branco embaixo); senão, `fallback`.
+    `probe` é o brilho médio de uma linha/coluna de referência ao longo do eixo a dividir."""
     diff = np.abs(np.diff(probe.astype(int)))
     i = int(np.argmax(diff))
     return i + 1 if diff[i] >= 6 else fallback
@@ -75,6 +77,7 @@ def background_mask(rgb, seed_bottom, tol=60, peel=150):
 
 
 def largest_component(fg):
+    """Mantém só o maior componente conexo (4 vizinhos) da máscara: a personagem, sem respingos do fundo."""
     h, w = fg.shape
     seen = np.zeros_like(fg)
     best = []
@@ -305,12 +308,13 @@ def normalize_parts(img, lm, head_target, legs_target, hem_pad=7, hair_ext=30):
 
 
 def binarize_alpha(img):
+    """Alpha só 0 ou 255 (pixel art não tem semitransparência): metade para cima vira opaco."""
     a = np.array(img)
     a[..., 3] = np.where(a[..., 3] >= 128, 255, 0)
     return Image.fromarray(a, 'RGBA')
 
 
-def main():
+def build_parser():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('sheet')
     ap.add_argument('--name', required=True, help='prefixo dos arquivos (ex.: marilia)')
@@ -328,117 +332,162 @@ def main():
                     help='fator aplicado a um --idle-image transparente (1.0 = já está na escala do jogo; confira comparando a largura do rosto)')
     ap.add_argument('--normalize-parts', action='store_true',
                     help='iguala o tamanho da cabeça e das pernas entre os frames (frames de IA derivam); exige --head-target e --legs-target')
-    ap.add_argument('--head-target', type=float, help='altura desejada topo do cabelo→pescoço, em px do canvas (ex.: 133)')
-    ap.add_argument('--legs-target', type=float, help='altura desejada barra da saia→pés, em px do canvas (ex.: 73)')
+    ap.add_argument('--head-target', type=float, help='altura desejada topo do cabelo→pescoço, em px do canvas (ex.: 130)')
+    ap.add_argument('--legs-target', type=float, help='altura desejada barra da saia→pés, em px do canvas (ex.: 72)')
     ap.add_argument('--landmarks', help='JSON com {"idle"|"1".."N": {"eye_y","neck_y","hem_y"}} para sobrepor a detecção automática')
     ap.add_argument('--no-clean-gaps', dest='clean_gaps', action='store_false', help='não limpa vãos opacos entre braço e corpo')
     ap.add_argument('--out', default='assets')
     ap.add_argument('--preview', help='grava uma folha de conferência sobre fundo verde')
-    args = ap.parse_args()
+    return ap
 
+
+def read_sheet(args):
+    """Abre a folha em RGB e descarta o artefato de borda externa (1–2 px de linha cinza/escura)."""
     sheet = Image.open(args.sheet).convert('RGB')
-    # Folhas geradas por IA costumam ter 1–2 px de linha cinza/escura nas bordas externas (artefato)
     if args.trim_edge:
         t = args.trim_edge
         sheet = sheet.crop((t, t, sheet.width - t, sheet.height - t))
+    return sheet
+
+
+def grid_lines(sheet, args):
+    """Coordenadas (xs, ys) das linhas que dividem a folha em colunas × fileiras."""
     W, H = sheet.size
-    arr = np.array(sheet)
-    ys = [0, H]
     if args.rows == 2:
-        sy = (args.split_y - args.trim_edge) if args.split_y else find_split(arr, H, arr[:, 3, :].mean(axis=1), H // 2)
+        if args.split_y:
+            sy = args.split_y - args.trim_edge          # --split-y é medido na folha original
+        else:
+            sy = find_split(np.array(sheet)[:, 3, :].mean(axis=1), H // 2)
         ys = [0, sy, H]
     else:
         ys = [round(i * H / args.rows) for i in range(args.rows + 1)]
     xs = [round(i * W / args.cols) for i in range(args.cols + 1)]
+    return xs, ys
 
+
+def extract_frames(sheet, args):
+    """Recorta e limpa cada quadrante, na ordem de leitura: ([figura RGBA], [sola_refeita])."""
+    xs, ys = grid_lines(sheet, args)
     frames, rebuilt_flags = [], []
     for r in range(args.rows):
         for c in range(args.cols):
             x0, x1, y0, y1 = xs[c], xs[c + 1], ys[r], ys[r + 1]
             # Recua junto às costuras (não nas bordas externas da folha)
-            if c > 0: x0 += args.inset
-            if c < args.cols - 1: x1 -= args.inset
-            if r > 0: y0 += args.inset
-            if r < args.rows - 1: y1 -= args.inset
+            if c > 0:
+                x0 += args.inset
+            if c < args.cols - 1:
+                x1 -= args.inset
+            if r > 0:
+                y0 += args.inset
+            if r < args.rows - 1:
+                y1 -= args.inset
             img, rebuilt = extract_frame(sheet.crop((x0, y0, x1, y1)), r == args.rows - 1, args.outline_px)
             frames.append(img)
             rebuilt_flags.append(rebuilt)
+    return frames, rebuilt_flags
 
-    idle_extra, idle_ready = None, False
-    if args.idle_image:
-        src = Image.open(args.idle_image)
-        if src.mode in ('RGBA', 'LA') and np.array(src.convert('RGBA'))[..., 3].min() == 0:
-            # Já recortado (fundo transparente): usa o alpha dele, sem mexer nas cores
-            idle_extra = src.convert('RGBA')
-            idle_extra = idle_extra.crop(idle_extra.getchannel('A').getbbox())
-            idle_ready = True
-        else:
-            idle_extra, _ = extract_frame(src.convert('RGB'), True, args.outline_px)
-    allf = frames + ([idle_extra] if idle_extra is not None else [])
 
-    # Escala única: o frame mais alto da folha fica com a altura do canvas.
-    # Um idle já pronto entra na escala que ele tem (--idle-scale), pois já está no tamanho do jogo.
+def load_idle(args):
+    """Pose parada vinda de outra imagem: (figura, já_pronta). (None, False) se não houver --idle-image.
+    Com fundo transparente a imagem é usada como está (já_pronta=True); sem, passa pela remoção de fundo."""
+    if not args.idle_image:
+        return None, False
+    src = Image.open(args.idle_image)
+    if src.mode in ('RGBA', 'LA') and np.array(src.convert('RGBA'))[..., 3].min() == 0:
+        idle = src.convert('RGBA')
+        return idle.crop(idle.getchannel('A').getbbox()), True
+    idle, _ = extract_frame(src.convert('RGB'), True, args.outline_px)
+    return idle, False
+
+
+def scale_figures(frames, idle, idle_ready, args):
+    """Reduz cada figura à escala do jogo. Escala única: o frame mais alto da folha fica com a altura do canvas.
+    Um idle já pronto entra na escala que ele tem (--idle-scale). Retorna (figuras, escala)."""
     scale = args.height / max(f.height for f in frames)
-    scales = [scale] * len(frames) + ([args.idle_scale if idle_ready else scale] if idle_extra is not None else [])
+    allf = frames + ([idle] if idle is not None else [])
+    scales = [scale] * len(frames) + ([args.idle_scale if idle_ready else scale] if idle is not None else [])
     figs = []
     for f, sc in zip(allf, scales):
         size = (max(1, round(f.width * sc)), max(1, round(f.height * sc)))
         # RGBa (alpha pré-multiplicado): evita franja escura/clara nas bordas ao reduzir
         g = binarize_alpha(f.convert('RGBa').resize(size, Image.LANCZOS).convert('RGBA'))
         figs.append(g.crop(g.getbbox()))
+    return figs, scale
 
-    parts_report = []
-    if args.normalize_parts:
-        if args.head_target is None or args.legs_target is None:
-            raise SystemExit('--normalize-parts exige --head-target e --legs-target')
-        override = {}
-        if args.landmarks:
-            import json
-            override = json.load(open(args.landmarks, encoding='utf-8'))
-        labels = [str(i) for i in range(1, len(frames) + 1)] + (['idle'] if idle_extra is not None else [])
-        new_figs = []
-        for lab, g in zip(labels, figs):
-            lm = detect_landmarks(g)
-            lm.update(override.get(lab, {}))
-            parts_report.append((lab, dict(lm), g.height))
-            new_figs.append(normalize_parts(g, lm, args.head_target, args.legs_target))
-        figs = new_figs
-        for lab, lm, hh in parts_report:
-            print(f'  [{lab}] olhos y={lm["eye_y"]:.0f} pescoço y={lm["neck_y"]} barra y={lm["hem_y"]} (altura antes {hh})')
+
+def normalize_figures(figs, has_idle, args):
+    """Etapa opcional (--normalize-parts): iguala cabeça e pernas entre os frames. Imprime os pontos achados."""
+    if args.head_target is None or args.legs_target is None:
+        raise SystemExit('--normalize-parts exige --head-target e --legs-target')
+    override = {}
+    if args.landmarks:
+        with open(args.landmarks, encoding='utf-8') as fh:
+            override = json.load(fh)
+    n_walk = len(figs) - (1 if has_idle else 0)
+    labels = [str(i) for i in range(1, n_walk + 1)] + (['idle'] if has_idle else [])
+    new_figs, report = [], []
+    for lab, g in zip(labels, figs):
+        lm = detect_landmarks(g)
+        lm.update(override.get(lab, {}))
+        report.append((lab, dict(lm), g.height))
+        new_figs.append(normalize_parts(g, lm, args.head_target, args.legs_target))
+    for lab, lm, height_before in report:
+        print(f'  [{lab}] olhos y={lm["eye_y"]:.0f} pescoço y={lm["neck_y"]} barra y={lm["hem_y"]} (altura antes {height_before})')
+    return new_figs
+
+
+def compose_canvases(figs, args):
+    """Coloca cada figura num canvas de largura única: eixo do corpo no centro, pés na base.
+    Retorna (canvases, largura, eixos, pixels_limpos_por_frame)."""
     if any(g.height > args.height for g in figs):
         raise SystemExit(f'figura mais alta que o canvas ({max(g.height for g in figs)} > {args.height}); ajuste os alvos')
-
     anchors = [body_anchor_x(g) for g in figs]
     half = int(np.ceil(max(max(a, g.width - a) for g, a in zip(figs, anchors)))) + 1
     canvas_w = half * 2
-
-    def compose(g, anchor):
+    outs, cleaned = [], []
+    for g, anchor in zip(figs, anchors):
         canvas = Image.new('RGBA', (canvas_w, args.height), (0, 0, 0, 0))
         canvas.alpha_composite(g, (int(round(half - anchor)), args.height - g.height))
         if args.clean_gaps:
             canvas, n = clear_gap_strips(canvas)
             cleaned.append(n)
-        return canvas
+        outs.append(canvas)
+    return outs, canvas_w, anchors, cleaned
 
-    cleaned = []
-    outs = [compose(g, a) for g, a in zip(figs, anchors)]
+
+def write_preview(outs, canvas_w, args):
+    """Folha de conferência: todos os frames lado a lado sobre fundo verde."""
+    sheet = Image.new('RGBA', (canvas_w * len(outs) + 8 * (len(outs) - 1), args.height), GREEN)
+    for i, im in enumerate(outs):
+        sheet.alpha_composite(im, (i * (canvas_w + 8), 0))
+    sheet.save(args.preview)
+
+
+def main():
+    args = build_parser().parse_args()
+    sheet = read_sheet(args)
+    frames, rebuilt_flags = extract_frames(sheet, args)
+    idle, idle_ready = load_idle(args)
+    figs, scale = scale_figures(frames, idle, idle_ready, args)
+    if args.normalize_parts:
+        figs = normalize_figures(figs, idle is not None, args)
+    outs, canvas_w, anchors, cleaned = compose_canvases(figs, args)
+
     walk = outs[:len(frames)]
-    idle = outs[-1] if idle_extra else (walk[args.idle_from] if args.idle_from is not None else None)
+    idle_out = outs[-1] if idle is not None else (walk[args.idle_from] if args.idle_from is not None else None)
     for i, im in enumerate(walk, 1):
         im.save(f'{args.out}/{args.name}_walk{i}.png')
-    if idle is not None:
-        idle.save(f'{args.out}/{args.name}_idle.png')
+    if idle_out is not None:
+        idle_out.save(f'{args.out}/{args.name}_idle.png')
 
     print(f'escala {scale:.3f} | canvas {canvas_w}x{args.height} | frames {len(walk)}')
     if args.clean_gaps and any(cleaned):
         print('  vãos opacos entre braço e corpo limpos (pixels por frame): ' + ', '.join(str(n) for n in cleaned))
-    for i, (f, a, rb) in enumerate(zip(allf, anchors, rebuilt_flags + [False]), 1):
-        print(f'  frame {i}: figura {f.width}x{f.height}px na folha, eixo do corpo x={a:.0f}' + (' (sola refeita)' if rb else ''))
+    sizes = [f.size for f in frames + ([idle] if idle is not None else [])]
+    for i, ((w, h), a, rb) in enumerate(zip(sizes, anchors, rebuilt_flags + [False]), 1):
+        print(f'  frame {i}: figura {w}x{h}px na folha, eixo do corpo x={a:.0f}' + (' (sola refeita)' if rb else ''))
     if args.preview:
-        sh = Image.new('RGBA', (canvas_w * len(outs) + 8 * (len(outs) - 1), args.height), GREEN)
-        for i, im in enumerate(outs):
-            sh.alpha_composite(im, (i * (canvas_w + 8), 0))
-        sh.save(args.preview)
+        write_preview(outs, canvas_w, args)
 
 
 if __name__ == '__main__':

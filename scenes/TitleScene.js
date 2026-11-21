@@ -34,9 +34,7 @@ class TitleScene extends Phaser.Scene {
         this.add.image(0, 0, 'background2').setOrigin(0, 0);
         this.add.rectangle(W/2, H/2, W, H, 0x000a1a, 0.82);
 
-        const txt = (x, y, str, style) =>
-            this.add.text(x, y, str, { fontFamily: 'monospace', resolution: 3, ...style })
-                .setOrigin(0.5);
+        const txt = UI.textFactory(this);
 
         // Título
         txt(W/2, 28, 'SUMANZADA ADVENTURE', {
@@ -184,13 +182,7 @@ class TitleScene extends Phaser.Scene {
                 }
             });
 
-        // Crédito
-        txt(W/2, 252, 'Desenvolvido por Andre Suman  |  @andresuman', {
-            fontSize: '11px',
-            color: '#cccccc',
-            stroke: '#000000',
-            strokeThickness: 3
-        });
+        UI.addCredit(this);
 
         // Teclado também inicia
         this.input.keyboard.once('keydown', () => {

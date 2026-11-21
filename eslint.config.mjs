@@ -13,9 +13,10 @@ const browser = {
 const sharedByScripts = {
     Phaser: 'readonly',
     BootScene: 'readonly', TitleScene: 'readonly', CharacterSelectScene: 'readonly', GameScene: 'readonly',
-    HUDScene: 'readonly', GameOverScene: 'readonly', WinScene: 'readonly',
+    HUDScene: 'readonly', ResultScene: 'readonly', GameOverScene: 'readonly', WinScene: 'readonly',
     CHARACTERS: 'readonly', COLLECTIBLE_TYPES: 'readonly', COLLECTIBLE_LAYOUT: 'readonly',
     collectibleLayoutPoints: 'readonly', LIVES_START: 'readonly',
+    characterById: 'readonly', characterTextures: 'readonly', UI: 'readonly',
 };
 
 const node = {
@@ -23,7 +24,8 @@ const node = {
     setTimeout: 'readonly', clearTimeout: 'readonly', Buffer: 'readonly',
     URL: 'readonly',
     // Dentro de page.evaluate() o código roda no navegador, onde estas globais existem
-    window: 'readonly', localStorage: 'readonly', GROUND_Y: 'readonly'
+    window: 'readonly', localStorage: 'readonly', GROUND_Y: 'readonly',
+    COLLECTIBLE_TYPES: 'readonly', characterById: 'readonly',
 };
 
 const rules = {

@@ -12,9 +12,7 @@ class CharacterSelectScene extends Phaser.Scene {
         this.add.image(0, 0, 'background2').setOrigin(0, 0);
         this.add.rectangle(W / 2, this.scale.height / 2, W, this.scale.height, 0x000a1a, 0.82);
 
-        const txt = (x, y, str, style) =>
-            this.add.text(x, y, str, { fontFamily: 'monospace', resolution: 3, ...style })
-                .setOrigin(0.5);
+        const txt = UI.textFactory(this);
 
         // Título
         txt(W / 2, 24, 'ESCOLHA SEU PERSONAGEM', {
@@ -35,17 +33,16 @@ class CharacterSelectScene extends Phaser.Scene {
         back.on('pointerout',  () => back.setColor('#cccccc'));
         back.on('pointerdown', () => this.scene.start('TitleScene'));
 
-        // ── Personagens ──
-        // O tamanho do sprite é calculado para caber na caixa do card, então um personagem novo
-        // não precisa de escala manual.
-        const CHARACTERS = [
-            { key: 'andre',   name: 'DEDÉ',    tag: '▶ SELECIONADO ◀', idle: 'andre_idle' },
-            { key: 'thais',   name: 'TATÁ',    tag: '▶ SELECIONADA ◀', idle: 'thais_idle' },
-            { key: 'rafinha', name: 'RAFINHA', tag: '▶ SELECIONADO ◀', idle: 'rafinha_idle' },
-            { key: 'marcela', name: 'PITU',    tag: '▶ SELECIONADA ◀', idle: 'marcela_idle' },
-            { key: 'marilia', name: 'PITCHA',  tag: '▶ SELECIONADA ◀', idle: 'marilia_idle' },
-        ];
-        const n = CHARACTERS.length;
+        // ── Personagens (lista única em Characters.js) ──
+        // O tamanho do sprite é calculado para caber na caixa do card (ver SPRITE_MAX_*),
+        // então um personagem novo não precisa de escala manual.
+        const cards = CHARACTERS.map(c => ({
+            key: c.key,
+            name: c.name,
+            tag: `▶ SELECIONAD${c.feminine ? 'A' : 'O'} ◀`,
+            idle: characterTextures(c.key).idle,
+        }));
+        const n = cards.length;
         this._count = n;
 
         // Layout (480×270): título no alto, cards no meio e botão embaixo, com folgas parecidas (~14 px).
@@ -59,10 +56,10 @@ class CharacterSelectScene extends Phaser.Scene {
         const NAME_Y = SPRITE_FEET_Y + 14, TAG_Y = NAME_Y + 15;
         const TAG_SIZE = CARD_W < 100 ? '8px' : '9px';        // "▶ SELECIONADA ◀" precisa caber no card
         // Cards distribuídos e centralizados na largura, qualquer que seja a quantidade
-        const CARD_XS = CHARACTERS.map((_, i) => W / 2 + (i - (n - 1) / 2) * (CARD_W + GAP));
+        const CARD_XS = cards.map((_, i) => W / 2 + (i - (n - 1) / 2) * (CARD_W + GAP));
 
         this._cards = [];
-        CHARACTERS.forEach((ch, i) => {
+        cards.forEach((ch, i) => {
             const cx = CARD_XS[i];
             const container = this.add.container(cx, 0);
 

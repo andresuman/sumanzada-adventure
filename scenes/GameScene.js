@@ -7,20 +7,16 @@ const PLAYER_SPEED = 140;
 const JUMP_VY     = -440;
 const LIVES_START = 5;
 const CAPY_SPEED  = 85;     // velocidade base das capivaras (px/s)
-const LEVEL_WIDTH = 2972;   // largura exata do background2.png
+const WORLD_WIDTH = 2972;   // largura exata do background2.png (largura do mundo do jogo)
 const TIME_START  = 60;     // 1 minuto em segundos
 
-// Personagens jogáveis: textura idle + chaves das animações criadas em BootScene.
-// A escolha vem de CharacterSelectScene (data.character) ou do registry
-// (GameOver/WinScene reiniciam direto aqui, sem passar pela seleção); padrão: André.
-// `collectible` aponta para um tipo de COLLECTIBLE_TYPES (Collectibles.js).
-const CHARACTERS = {
-    andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk', collectible: 'accordion' },
-    thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk', collectible: 'shoe' },
-    rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk', collectible: 'conniff' },
-    marcela: { idle: 'marcela_idle', idleAnim: 'marcela-idle', walkAnim: 'marcela-walk', collectible: 'kitty' },
-    marilia: { idle: 'marilia_idle', idleAnim: 'marilia-idle', walkAnim: 'marilia-walk', collectible: 'yarn' },
-};
+// Garrafa (objetivo): escala do sprite e quanto os pés afundam no chão (px)
+const BOTTLE_SCALE = 0.48;
+const BOTTLE_SINK  = 3;
+
+// Personagens jogáveis: lista única em Characters.js (texturas, nomes e item de cada um).
+// A escolha vem de CharacterSelectScene (data.character) ou do registry (Vitória/Game Over reiniciam
+// direto aqui, sem passar pela seleção).
 
 // Parâmetros de spawn das capivaras
 const SPAWN_DELAY_MAX    = 3500; // intervalo inicial entre spawns (ms)
@@ -31,7 +27,7 @@ const SPAWN_SPEED_RAMP   = 0.8;  // fator de aceleração máxima (80% acima do 
 // Tolerâncias de colisão e timings
 const STOMP_TOLERANCE     = 14;  // px de tolerância para detectar pisada no topo da capivara
 const GAMEOVER_DELAY      = 700; // ms de espera antes de exibir GameOverScene
-const PHASE_TRANS_DELAY   = 600; // ms de espera antes da tela de vitória
+const WIN_DELAY           = 600; // ms de espera antes da tela de vitória
 const INVINCIBLE_REPEAT   = 10;  // repetições do piscar após levar dano
 const INVINCIBLE_DURATION = 90;  // duração de cada piscar de invencibilidade (ms)
 
@@ -39,13 +35,14 @@ class GameScene extends Phaser.Scene {
     constructor() { super({ key: 'GameScene' }); }
 
     init(data) {
-        this.score       = data && data.score ? data.score : 0;
-        this.lives       = data && data.lives ? data.lives : LIVES_START;
-        // Personagem escolhido na CharacterSelectScene; o registry cobre o restart
-        // de GameOver/WinScene, que não passam character.
-        this.character   = (data && data.character) || this.registry.get('character') || 'andre';
-        if (!CHARACTERS[this.character]) this.character = 'andre';
-        this._charCfg    = CHARACTERS[this.character];
+        // Personagem escolhido na CharacterSelectScene; o registry cobre o restart de Vitória/Game Over,
+        // que não passam `character`. Chave desconhecida cai no primeiro personagem da lista.
+        const wanted     = (data && data.character) || this.registry.get('character');
+        this._charCfg    = characterById(wanted);
+        this.character   = this._charCfg.key;
+        this._tex        = characterTextures(this.character);
+        this.score       = 0;
+        this.lives       = LIVES_START;
         this.gameTime    = TIME_START;
         this.dead        = false;
         this.invincible  = false;
@@ -53,46 +50,37 @@ class GameScene extends Phaser.Scene {
         this.comboPoints = 0;   // pontos acumulados na sequência atual (devolvidos se pisar)
         this.collected   = 0;   // itens coletados (mostrado no HUD)
         this._groupLeft  = {};  // itens restantes por grupo (bônus ao completar)
-        this._playerJumping = false; // diferencia pulo voluntário de empurrões/dano
     }
 
     create() {
         const H = this.scale.height;
 
-        this._levelWidth = LEVEL_WIDTH;
-        this._capySpeed  = CAPY_SPEED;
-        this._bgKey      = 'background2';
-        this._groundKey  = 'ground2';
-
         // ── Fundo (imagem estática de largura fixa) ──────────────────────────
-        this.add.image(0, 0, this._bgKey).setOrigin(0, 0).setDepth(0);
+        this.add.image(0, 0, 'background2').setOrigin(0, 0).setDepth(0);
 
         // ── Chão (gerado de uma vez para toda a fase) ─────────────────────────
         this.ground = this.physics.add.staticGroup();
-        this.spawnGround(0, this._levelWidth);
+        this.spawnGround(0, WORLD_WIDTH);
 
         // ── Capivaras ────────────────────────────────────────────────────────
         this.capybaras = this.physics.add.group();
 
         // ── Garrafa (objetivo final) ──────────────────────────────────────────
-        const bottleKey   = 'bottle2';
-        const bottleH     = 240;
-        const bottleScale = 0.48;
-        const bottleX     = this._levelWidth - 80;
-        const bottleY     = GROUND_Y - (bottleH * bottleScale) / 2 + 6;
-        this.bottle = this.physics.add.staticSprite(bottleX, bottleY, bottleKey)
-            .setScale(bottleScale)
+        this.bottle = this.physics.add.staticSprite(WORLD_WIDTH - 80, 0, 'bottle2')
+            .setScale(BOTTLE_SCALE)
             .setDepth(10);
+        // Altura vem do sprite (e não de um número fixo): a base fica logo abaixo do topo do chão
+        this.bottle.y = GROUND_Y + BOTTLE_SINK - this.bottle.displayHeight / 2;
         this.bottle.refreshBody();
 
         // ── Personagem escolhido (this.player é o jogador, seja qual for o personagem) ──
-        this.player = this.physics.add.sprite(80, GROUND_Y - 50, this._charCfg.idle)
+        this.player = this.physics.add.sprite(80, GROUND_Y - 50, this._tex.idle)
             .setScale(PLAYER_SCALE)
             .setCollideWorldBounds(false)
             .setDepth(10);
 
-        // Hitbox proporcional ao sprite do personagem — 
-        // os valores são os mesmos de antes; André e Thais são mais estreitos.
+        // Hitbox proporcional ao frame do personagem (55% × 80%, centrada). Vale para todos porque os
+        // canvases dos sprites são centrados no corpo; o corpo usa o tamanho do frame idle.
         const fw = this.player.frame.width;
         const fh = this.player.frame.height;
         this.player.body.setSize(fw * 0.55, fh * 0.80);
@@ -112,7 +100,7 @@ class GameScene extends Phaser.Scene {
             this._onCollect, null, this);
 
         // ── Câmera ───────────────────────────────────────────────────────────
-        this.cameras.main.setBounds(0, 0, this._levelWidth, H);
+        this.cameras.main.setBounds(0, 0, WORLD_WIDTH, H);
         this.cameras.main.startFollow(this.player, true, 0.1, 0);
 
         // ── Controles ────────────────────────────────────────────────────────
@@ -141,7 +129,7 @@ class GameScene extends Phaser.Scene {
         });
 
         this.scene.launch('HUDScene', { gameScene: this });
-        this._showPhaseAnnouncement();
+        this._showCityAnnouncement();
         this._scheduleNextCapy();
     }
 
@@ -161,25 +149,23 @@ class GameScene extends Phaser.Scene {
 
         // Limites horizontais: não sai da fase nem fica atrás da câmera
         if (this.player.x < cam + 16)                  this.player.x = cam + 16;
-        if (this.player.x > this._levelWidth - 20) this.player.x = this._levelWidth - 20;
+        if (this.player.x > WORLD_WIDTH - 20) this.player.x = WORLD_WIDTH - 20;
         this.player.setVelocityX(vx);
 
         // ── Pulo ──────────────────────────────────────────────────────────────
         const jumpPressed = this.cursors.up.isDown || this.cursors.space.isDown ||
                             this.wasd.W.isDown || this.btnJump;
         if (jumpPressed && onGround) {
-            this._playerJumping = true;
             this.player.setVelocityY(JUMP_VY);
             this.sndJump();
         }
 
         // ── Animação ─────────────────────────────────────────────────────────
-        if (vx !== 0) this.player.anims.play(this._charCfg.walkAnim, true);
-        else          this.player.anims.play(this._charCfg.idleAnim, true);
+        if (vx !== 0) this.player.anims.play(this._tex.walkAnim, true);
+        else          this.player.anims.play(this._tex.idleAnim, true);
 
         // ── Detectar passagem limpa + limpar capivaras fora da tela ──────────
         const playerOnGround = this.player.body.blocked.down || this.player.body.touching.down;
-        if (playerOnGround && this.player.body.velocity.y >= 0) this._playerJumping = false;
         this.capybaras.getChildren().forEach(capy => {
             // Momento em que a capivara cruza o jogador: decide se pontua ou não
             if (!capy._scored && !capy._stomped && !capy._missed && capy.x < this.player.x - 40) {
@@ -274,7 +260,7 @@ class GameScene extends Phaser.Scene {
     // ── Chão ─────────────────────────────────────────────────────────────────
     spawnGround(from, to) {
         for (let x = from; x < to; x += TILE_W) {
-            const tile = this.ground.create(x + TILE_W/2, GROUND_Y + TILE_H/2, this._groundKey);
+            const tile = this.ground.create(x + TILE_W/2, GROUND_Y + TILE_H/2, 'ground2');
             tile.setDisplaySize(TILE_W, TILE_H).refreshBody();
         }
     }
@@ -287,7 +273,7 @@ class GameScene extends Phaser.Scene {
 
     // ── Velocidade da capivara (px/s) baseada no progresso da fase ───────────
     _getCapySpeed(progress) {
-        return this._capySpeed * (1 + SPAWN_SPEED_RAMP * progress);
+        return CAPY_SPEED * (1 + SPAWN_SPEED_RAMP * progress);
     }
 
     // ── Agendar próxima capivara por timer (intervalo e velocidade crescem com o tempo) ─
@@ -362,9 +348,9 @@ class GameScene extends Phaser.Scene {
         player.setVelocityX(0);
 
         this.sndVictory();
-        this.time.delayedCall(PHASE_TRANS_DELAY, () => {
+        this.time.delayedCall(WIN_DELAY, () => {
             this.scene.stop('HUDScene');
-            this.scene.start('WinScene', { score: this.score, time: this.gameTime });
+            this.scene.start('WinScene', { score: this.score });
         });
     }
 
@@ -389,7 +375,6 @@ class GameScene extends Phaser.Scene {
         });
 
         const cam = this.cameras.main.scrollX;
-        this._playerJumping = false;
         this.player.setPosition(cam + 80, GROUND_Y - 80);
         this.player.setVelocity(0, 0);
     }
@@ -401,44 +386,15 @@ class GameScene extends Phaser.Scene {
         this.sndGameOver();
         this.time.delayedCall(GAMEOVER_DELAY, () => {
             this.scene.stop('HUDScene');
-            this.scene.start('GameOverScene', { score: this.score, time: this.gameTime });
-        });
-    }
-
-    // ── Sons (Web Audio API — sem arquivos externos) ──────────────────────────
-    // ── Som de passagem limpa (square, campo de Fá maior, evolui com o combo) ──
-    sndCleanPass(combo) {
-        this._sfx(ac => {
-            // Notas do campo harmônico de Fá maior (hexacorde de Dó a Lá) — sobe um grau a cada passagem limpa.
-            // Mesmo timbre square dos outros SFX; harmonicamente compatível com a trilha em Fá maior.
-            const notes = [523, 587, 659, 698, 784, 880]; // C5 D5 E5 F5 G5 A5
-            const base  = notes[Math.min(combo - 1, notes.length - 1)];
-            const now   = ac.currentTime;
-
-            // "Ping" curto: nota + leve slide de um semitom para cima (brilho retro)
-            const ping = (freq, t, amp) => {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
-                o.type = 'square';
-                o.frequency.setValueAtTime(freq, now + t);
-                o.frequency.exponentialRampToValueAtTime(freq * 1.06, now + t + 0.07);
-                g.gain.setValueAtTime(amp, now + t);
-                g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.10);
-                o.start(now + t); o.stop(now + t + 0.10);
-            };
-
-            ping(base,       0,    0.14); // nota principal (sempre)
-            if (combo >= 3) ping(base * 1.5, 0.08, 0.10); // quinta justa — combo médio
-            if (combo >= 5) ping(base * 2,   0.15, 0.07); // oitava acima — combo alto
+            this.scene.start('GameOverScene', { score: this.score });
         });
     }
 
     // ── Texto flutuante de pontuação ──────────────────────────────────────────
     // usedCombo opcional: fonte maior em combo alto para reforçar o impacto visual
     _floatText(text, x, y, color, usedCombo) {
-        const label = text;
         const size  = usedCombo && usedCombo >= 5 ? '18px' : usedCombo && usedCombo >= 3 ? '16px' : '14px';
-        const t = this.add.text(x, y, label, {
+        const t = this.add.text(x, y, text, {
             fontFamily: 'monospace', fontSize: size,
             color, stroke: '#000000', strokeThickness: 4,
         }).setOrigin(0.5).setDepth(20);
@@ -451,7 +407,7 @@ class GameScene extends Phaser.Scene {
     }
 
     // ── Anúncio da cidade no início ───────────────────────────────────────────
-    _showPhaseAnnouncement() {
+    _showCityAnnouncement() {
         const W = this.scale.width;
         const H = this.scale.height;
 
@@ -480,87 +436,53 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    // ── Sons (Web Audio API — sem arquivos externos) ──────────────────────────
+    // Toca um tom curto. `sweepTo` desliza a frequência de `freq` até ele em `sweepTime` s; o volume cai
+    // exponencialmente até 0.001 em `decay` s (nunca 0: exponentialRamp não aceita zero e geraria clique)
+    // e o oscilador para em `stop` s. `delay` agenda a nota para depois (melodias curtas).
+    _tone(ac, { type = 'square', freq, sweepTo, sweepTime = 0.10, gain = 0.15, decay = 0.12, stop = decay, delay = 0 }) {
+        const t = ac.currentTime + delay;
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.connect(g); g.connect(ac.destination);
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t);
+        if (sweepTo) o.frequency.exponentialRampToValueAtTime(sweepTo, t + sweepTime);
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        o.start(t); o.stop(t + stop);
+    }
+
     sndJump() {
-        this._sfx(ac => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.connect(g); g.connect(ac.destination);
-            o.type = 'square';
-            o.frequency.setValueAtTime(180, ac.currentTime);
-            o.frequency.exponentialRampToValueAtTime(420, ac.currentTime + 0.10);
-            g.gain.setValueAtTime(0.18, ac.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
-            o.start(ac.currentTime); o.stop(ac.currentTime + 0.12);
-        });
+        this._sfx(ac => this._tone(ac, { freq: 180, sweepTo: 420, sweepTime: 0.10, gain: 0.18, decay: 0.12 }));
     }
 
     sndStomp() {
-        this._sfx(ac => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.connect(g); g.connect(ac.destination);
-            o.type = 'square';
-            o.frequency.setValueAtTime(320, ac.currentTime);
-            o.frequency.exponentialRampToValueAtTime(55, ac.currentTime + 0.14);
-            g.gain.setValueAtTime(0.22, ac.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.15);
-            o.start(ac.currentTime); o.stop(ac.currentTime + 0.15);
-        });
+        this._sfx(ac => this._tone(ac, { freq: 320, sweepTo: 55, sweepTime: 0.14, gain: 0.22, decay: 0.15 }));
     }
 
     sndTick() {
         // Frequência alta (880 Hz) reforça urgência — diferencia o tick do relógio dos outros SFX de jogo
-        this._sfx(ac => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.connect(g); g.connect(ac.destination);
-            o.type = 'square';
-            o.frequency.setValueAtTime(880, ac.currentTime);
-            g.gain.setValueAtTime(0.10, ac.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.06);
-            o.start(ac.currentTime); o.stop(ac.currentTime + 0.06);
-        });
+        this._sfx(ac => this._tone(ac, { freq: 880, gain: 0.10, decay: 0.06 }));
     }
 
     sndHurt() {
         // Sawtooth tem timbre mais áspero que square — transmite dano melhor do que os SFX de ação
-        this._sfx(ac => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.connect(g); g.connect(ac.destination);
-            o.type = 'sawtooth';
-            o.frequency.setValueAtTime(220, ac.currentTime);
-            o.frequency.exponentialRampToValueAtTime(70, ac.currentTime + 0.18);
-            g.gain.setValueAtTime(0.18, ac.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.20);
-            o.start(ac.currentTime);
-            o.stop(ac.currentTime + 0.20);
-        });
+        this._sfx(ac => this._tone(ac, { type: 'sawtooth', freq: 220, sweepTo: 70, sweepTime: 0.18, gain: 0.18, decay: 0.20 }));
     }
 
     sndGameOver() {
         // Descida cromática em sawtooth — derrota sem ser excessivamente dramático
         this._sfx(ac => {
-            [[220, 0], [196, 0.16], [174, 0.32], [155, 0.52]].forEach(([f, d]) => {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
-                o.type = 'sawtooth';
-                o.frequency.setValueAtTime(f, ac.currentTime + d);
-                g.gain.setValueAtTime(0.15, ac.currentTime + d);
-                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.14);
-                o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.14);
-            });
+            [[220, 0], [196, 0.16], [174, 0.32], [155, 0.52]].forEach(([freq, delay]) =>
+                this._tone(ac, { type: 'sawtooth', freq, delay, gain: 0.15, decay: 0.14 }));
         });
     }
 
     sndVictory() {
         // Fanfarra ascendente de cinco notas
         this._sfx(ac => {
-            [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.38], [1319, 0.55]].forEach(([f, d]) => {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
-                o.type = 'square';
-                o.frequency.value = f;
-                g.gain.setValueAtTime(0.13, ac.currentTime + d);
-                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.22);
-                o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.25);
-            });
+            [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.38], [1319, 0.55]].forEach(([freq, delay]) =>
+                this._tone(ac, { freq, delay, gain: 0.13, decay: 0.22, stop: 0.25 }));
         });
     }
 
@@ -569,15 +491,23 @@ class GameScene extends Phaser.Scene {
         const sfx = type.sfx;
         if (!sfx) return;
         this._sfx(ac => {
-            sfx.notes.forEach(([f, d]) => {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
-                o.type = sfx.wave || 'square';
-                o.frequency.setValueAtTime(f, ac.currentTime + d);
-                g.gain.setValueAtTime(sfx.gain || 0.13, ac.currentTime + d);
-                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.10);
-                o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.11);
-            });
+            sfx.notes.forEach(([freq, delay]) =>
+                this._tone(ac, { type: sfx.wave || 'square', freq, delay, gain: sfx.gain || 0.13, decay: 0.10, stop: 0.11 }));
+        });
+    }
+
+    // Passagem limpa: sobe um grau da escala a cada acerto seguido (square, hexacorde de Dó a Lá).
+    sndCleanPass(combo) {
+        this._sfx(ac => {
+            const notes = [523, 587, 659, 698, 784, 880]; // C5 D5 E5 F5 G5 A5
+            const base  = notes[Math.min(combo - 1, notes.length - 1)];
+            // "Ping" curto: nota + leve slide de um semitom para cima (brilho retro)
+            const ping = (freq, delay, gain) =>
+                this._tone(ac, { freq, sweepTo: freq * 1.06, sweepTime: 0.07, gain, decay: 0.10, delay });
+
+            ping(base,       0,    0.14); // nota principal (sempre)
+            if (combo >= 3) ping(base * 1.5, 0.08, 0.10); // quinta justa — combo médio
+            if (combo >= 5) ping(base * 2,   0.15, 0.07); // oitava acima — combo alto
         });
     }
 
