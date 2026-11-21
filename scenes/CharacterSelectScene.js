@@ -17,7 +17,7 @@ class CharacterSelectScene extends Phaser.Scene {
                 .setOrigin(0.5);
 
         // Título
-        txt(W / 2, 20, 'ESCOLHA SEU PERSONAGEM', {
+        txt(W / 2, 24, 'ESCOLHA SEU PERSONAGEM', {
             fontSize: '20px',
             color: '#ffe040',
             stroke: '#000000',
@@ -35,16 +35,27 @@ class CharacterSelectScene extends Phaser.Scene {
         back.on('pointerout',  () => back.setColor('#cccccc'));
         back.on('pointerdown', () => this.scene.start('TitleScene'));
 
-        // ── Personagens  ──
-        // Rafinha usa escala menor no card: o carrinho é largo (335px), os outros têm ~190px.
+        // ── Personagens ──
+        // O tamanho do sprite é calculado para caber na caixa do card (ver SPRITE_MAX_*),
+        // então um personagem novo não precisa de escala manual.
         const CHARACTERS = [
-            { key: 'andre', name: 'DEDÉ',   tag: '▶ SELECIONADO ◀',  idle: 'andre_idle', scale: 0.30 },
-            { key: 'thais', name: 'TATÁ', tag: '▶ SELECIONADA ◀', idle: 'thais_idle', scale: 0.30 },
-            { key: 'rafinha', name: 'RAFINHA',     tag: '▶ SELECIONADO ◀',  idle: 'rafinha_idle', scale: 0.24 },
-            { key: 'marcela', name: 'PITU',     tag: '▶ SELECIONADA ◀',  idle: 'marcela_idle', scale: 0.30 },
+            { key: 'andre',   name: 'DEDÉ',    tag: '▶ SELECIONADO ◀', idle: 'andre_idle' },
+            { key: 'thais',   name: 'TATÁ',    tag: '▶ SELECIONADA ◀', idle: 'thais_idle' },
+            { key: 'rafinha', name: 'RAFINHA', tag: '▶ SELECIONADO ◀', idle: 'rafinha_idle' },
+            { key: 'marcela', name: 'PITU',    tag: '▶ SELECIONADA ◀', idle: 'marcela_idle' },
         ];
-        const CARD_W = 110, CARD_H = 180, CARD_Y = 128;
-        const CARD_XS = [65, 182, 298, 415];
+        this._count = CHARACTERS.length;
+
+        // Layout vertical (480×270): título no alto, cards no meio e botão embaixo, com folgas
+        // parecidas (~14 px) entre os blocos e margens de ~12 px no topo e ~16 px no rodapé.
+        const CARD_W = 108, CARD_H = 162, CARD_TOP = 46, GAP = 8;
+        const CARD_Y = CARD_TOP + CARD_H / 2;                 // centro do card
+        const SPRITE_MAX_W = CARD_W - 14, SPRITE_MAX_H = 112;
+        const SPRITE_FEET_Y = CARD_TOP + 10 + SPRITE_MAX_H;   // pés alinhados na mesma linha em todos
+        const NAME_Y = SPRITE_FEET_Y + 14, TAG_Y = NAME_Y + 15;
+        const n = CHARACTERS.length;
+        // Cards distribuídos e centralizados na largura, qualquer que seja a quantidade
+        const CARD_XS = CHARACTERS.map((_, i) => W / 2 + (i - (n - 1) / 2) * (CARD_W + GAP));
 
         this._cards = [];
         CHARACTERS.forEach((ch, i) => {
@@ -56,10 +67,12 @@ class CharacterSelectScene extends Phaser.Scene {
             bg.setStrokeStyle(3, 0xffffff);
             container.add(bg);
 
-            const sprite = this.add.image(0, 88, ch.idle).setScale(ch.scale);
+            const src = this.textures.get(ch.idle).getSourceImage();
+            const fit = Math.min(SPRITE_MAX_W / src.width, SPRITE_MAX_H / src.height);
+            const sprite = this.add.image(0, SPRITE_FEET_Y, ch.idle).setOrigin(0.5, 1).setScale(fit);
             container.add(sprite);
 
-            const name = txt(0, 146, ch.name, {
+            const name = txt(0, NAME_Y, ch.name, {
                 fontSize: '11px',
                 color: '#ffffff',
                 stroke: '#000000',
@@ -67,7 +80,7 @@ class CharacterSelectScene extends Phaser.Scene {
             });
             container.add(name);
 
-            const tag = txt(0, 206, ch.tag, {
+            const tag = txt(0, TAG_Y, ch.tag, {
                 fontSize: '9px',
                 color: '#ffe040',
                 stroke: '#000000',
@@ -83,11 +96,11 @@ class CharacterSelectScene extends Phaser.Scene {
             zone.on('pointerout',  () => { if (this._selected !== i) bg.setStrokeStyle(3, 0xffffff); });
             container.add(zone);
 
-            this._cards.push({ key: ch.key, bg, tag, container });
+            this._cards.push({ key: ch.key, bg, tag, sprite, container });
         });
 
         // Botão começar (mesmo estilo do JOGAR da TitleScene)
-        const btn = txt(W / 2, 244, '▶  COMEÇAR AVENTURA', {
+        const btn = txt(W / 2, 238, '▶  COMEÇAR AVENTURA', {
             fontSize: '14px',
             color: '#111111',
             stroke: '#000000',
@@ -103,8 +116,8 @@ class CharacterSelectScene extends Phaser.Scene {
         this.tweens.add({ targets: btn, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
 
         // Teclado: setas trocam o personagem, Enter começa, Esc volta
-        this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + 3) % 4));
-        this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % 4));
+        this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + this._count - 1) % this._count));
+        this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % this._count));
         this.input.keyboard.on('keydown-ENTER', () => this._startGame());
         this.input.keyboard.on('keydown-ESC',   () => this.scene.start('TitleScene'));
 
@@ -118,6 +131,7 @@ class CharacterSelectScene extends Phaser.Scene {
             const selected = j === i;
             card.bg.setStrokeStyle(3, selected ? 0xffe040 : 0xffffff);
             card.tag.setVisible(selected);
+            card.sprite.setAlpha(selected ? 1 : 0.8);   // destaca o escolhido sem esconder os outros
             // Card selecionado sobe 4px (mesmo efeito do protótipo)
             card.container.setY(selected ? -4 : 0);
         });

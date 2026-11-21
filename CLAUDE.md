@@ -114,7 +114,7 @@ BootScene → TitleScene → CharacterSelectScene → GameScene + HUDScene (para
 
 ## Personagens
 
-`CHARACTERS` (GameScene.js) mapeia chave → `{ idle, idleAnim, walkAnim }`. Cada personagem tem `<nome>_idle.png` + `<nome>_walk1–4.png` em `assets/`, carregados e animados em `BootScene`. A hitbox é proporcional ao frame (`0.55 × 0.80` do tamanho). Para adicionar um personagem: assets + `BootScene` + `CHARACTERS` + card em `CharacterSelectScene` (recalcular `CARD_XS` e o módulo das setas).
+`CHARACTERS` (GameScene.js) mapeia chave → `{ idle, idleAnim, walkAnim }`. Cada personagem tem `<nome>_idle.png` + `<nome>_walk1–4.png` em `assets/`, carregados e animados em `BootScene`. A hitbox é proporcional ao frame (`0.55 × 0.80` do tamanho). Para adicionar um personagem: assets + `BootScene` + `CHARACTERS` + card em `CharacterSelectScene` (posições dos cards, escala do sprite e setas se ajustam sozinhas à quantidade).
 
 ---
 
