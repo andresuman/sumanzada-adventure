@@ -14,7 +14,8 @@ const CHARACTERS = [
     { key: 'marilia', name: 'PITCHA',  collectible: 'yarn' },
     { key: 'solange', name: 'GÊ',      collectible: 'spade' },
     { key: 'texaco',  name: 'CACO',    collectible: 'ball' },
-    { key: 'gianluca', name: 'GIANLUCA', collectible: 'sushi' }
+    { key: 'gianluca', name: 'GIANLUCA', collectible: 'sushi' },
+    { key: 'livia',    name: 'LÍVIA',    collectible: 'ballet' }
 ];
 
 const WALK_FRAMES = 4;

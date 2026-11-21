@@ -3,7 +3,7 @@ class BootScene extends Phaser.Scene {
 
     preload() {
         // Personagens jogáveis: <chave>_idle.png + <chave>_walk1..4.png (lista em Characters.js).
-        // O Rafinha (carrinho) e o Gianluca (bicicleta) não andam a pé: o "andar" é o carro rolando / a pedalada.
+        // O Rafinha (carrinho), o Gianluca (bicicleta) e a Lívia (balé) não andam a pé: o "andar" é o carro rolando, a pedalada e a dança.
         CHARACTERS.forEach(c => {
             const t = characterTextures(c.key);
             [t.idle, ...t.walk].forEach(name => this.load.image(name, `assets/${name}.png`));

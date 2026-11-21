@@ -126,6 +126,18 @@ const COLLECTIBLE_TYPES = {
         // Arpejo curto; cada nota é [frequência Hz, atraso em s]
         sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
     },
+    ballet: {
+        texture: 'item_ballet',    // chave da textura no Phaser
+        label:   'sapatilha de balé',
+        image:   'assets/item_ballet.png', // PNG carregado em BootScene
+        scale:   0.25,             // 96px -> 24px de largura no jogo (perto do tamanho da moeda)
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#ff9ecb',        // rosa — cor do texto flutuante e do contador no HUD
+        spin:    false,            // sapatilha não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
 };
 
 // Grupos de itens ao longo da fase (x em px do mundo).
