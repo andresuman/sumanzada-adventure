@@ -30,11 +30,10 @@ async function openGame() {
         scenes: () => page.evaluate(() => window.__game.scene.getScenes(true).map(s => s.scene.key)),
         waitScene: (key, timeout = 10000) => page.waitForFunction(k => window.__game.scene.isActive(k), key, { timeout }),
         waitSelectReady,
-        // Título → seleção → jogo, escolhendo o personagem pelo índice (0 = primeiro card)
-        async startGame(characterIndex = 0) {
+        // Título → seleção → jogo com o personagem pré-selecionado (o primeiro)
+        async startGame() {
             await page.keyboard.press('Space');
             await waitSelectReady();
-            for (let i = 0; i < characterIndex; i++) { await page.keyboard.press('ArrowRight'); await page.waitForTimeout(60); }
             await page.keyboard.press('Enter');
             await page.waitForFunction(() => window.__game.scene.isActive('GameScene') && window.__game.scene.isActive('HUDScene'), null, { timeout: 10000 });
         },

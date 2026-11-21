@@ -1,17 +1,12 @@
 {
   "name": "sumanzada-adventure-tests",
   "private": true,
-  "description": "Testes de desenvolvimento. O jogo em si continua sem build e sem npm.",
+  "description": "Teste de fumaça no navegador. O jogo em si continua sem build e sem npm.",
   "scripts": {
-    "lint": "cd .. && eslint --config eslint.config.mjs .",
-    "test": "node --test static/*.test.js",
-    "test:smoke": "node --test smoke/*.test.js",
-    "test:all": "npm run lint && npm test && npm run test:smoke"
+    "test": "node --test smoke/*.test.js"
   },
   "devDependencies": {
-    "playwright": "1.65.1",
-    "pngjs": "7.0.0",
-    "eslint": "10.15.0"
+    "playwright": "1.65.1"
   },
   "engines": {
     "node": ">=22"

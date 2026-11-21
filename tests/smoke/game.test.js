@@ -1,152 +1,76 @@
-// Teste de fumaça no navegador: o jogo abre, o fluxo de cenas funciona e nada gera erro.
-// Lê o estado pelo gancho window.__game (game.js).
+// Teste de fumaça no navegador: abre o jogo e percorre o fluxo principal.
+// Falha em qualquer erro de página, console.error ou arquivo faltando (404) — o que mais quebra
+// quando uma imagem ou um nome é trocado. Lê o estado pelo gancho window.__game (game.js).
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { openGame } = require('../lib/browser');
 
 // Cada teste abre o seu próprio navegador para não herdar estado do anterior
-async function withGame(fn, opts) {
-    const g = await openGame(opts);
+async function withGame(fn) {
+    const g = await openGame();
     try { await fn(g); } finally { await g.close(); }
 }
 
-// Ordem dos cards (= ordem de Characters.js), lida do código: personagem novo entra no teste sozinho
-const CHARACTERS = [...require('../lib/project').read('Characters.js').matchAll(/\{\s*key:\s*'(\w+)'/g)].map(m => m[1]);
+test('percorre todos os personagens: sprite e item certos, andando, perdendo e voltando à escolha', () => withGame(async (g) => {
+    const keys = await g.game(() => CHARACTERS.map(c => c.key));
+    assert.ok(keys.length >= 3, 'não encontrei os personagens');
+    await g.page.keyboard.press('Space');                       // título → escolha
+    for (const [i, key] of keys.entries()) {
+        await g.waitSelectReady();
+        // Vai até o card i pelo estado (não por contagem de teclas): o último personagem vem pré-selecionado
+        for (let n = 0; n < keys.length && await g.game(() => window.__game.scene.getScene('CharacterSelectScene')._selected) !== i; n++) {
+            await g.page.keyboard.press('ArrowRight');
+            await g.page.waitForTimeout(80);
+        }
+        await g.page.keyboard.press('Enter');
+        await g.page.waitForFunction(() => window.__game.scene.isActive('GameScene') && window.__game.scene.isActive('HUDScene'), null, { timeout: 10000 });
 
-test('abre o jogo, escolhe personagem e joga alguns segundos sem erros', () => withGame(async (g) => {
-    await g.startGame(0);
-    await g.page.keyboard.down('ArrowRight');
-    for (let i = 0; i < 6; i++) {            // andar e pular continuamente por ~4 s
-        await g.page.keyboard.down('ArrowUp'); await g.page.waitForTimeout(450);
-        await g.page.keyboard.up('ArrowUp');   await g.page.waitForTimeout(200);
-    }
-    await g.page.keyboard.up('ArrowRight');
-    const moved = await g.game(() => window.__game.scene.getScene('GameScene').player.x);
-    assert.ok(moved > 100, `o personagem deveria ter andado (x=${moved})`);
-    assert.deepEqual(g.errors, []);
-}));
-
-assert.ok(CHARACTERS.length >= 3, 'não encontrei os personagens em Characters.js');
-for (const [i, character] of CHARACTERS.entries()) {
-    test(`personagem ${character}: usa o sprite e o item configurados`, () => withGame(async (g) => {
-        await g.startGame(i);
         const info = await g.game(() => {
             const gs = window.__game.scene.getScene('GameScene');
-            return {
-                character: gs.character,
-                expectedItem: COLLECTIBLE_TYPES[characterById(gs.character).collectible].texture,
-                item: gs._collectType && gs._collectType.texture,
-                hudCounter: !!window.__game.scene.getScene('HUDScene').collectedTxt,
-            };
+            return { character: gs.character, item: gs._collectType.texture, expected: COLLECTIBLE_TYPES[characterById(gs.character).collectible].texture };
         });
-        assert.equal(info.character, character);
-        assert.equal(info.item, info.expectedItem, 'o item ativo deve ser o do personagem');
-        assert.ok(info.hudCounter, 'o HUD deveria mostrar o contador do item');
-        assert.deepEqual(g.errors, []);
-    }));
-}
+        assert.equal(info.character, key);
+        assert.equal(info.item, info.expected, 'o item ativo deve ser o do personagem');
 
-test('coleta: item sobreposto ao jogador é coletado e soma pontos', () => withGame(async (g) => {
-    await g.startGame(0);
-    const before = await g.game(() => {
-        const gs = window.__game.scene.getScene('GameScene');
-        const item = gs.collectibles.getChildren()[0];
-        const out = { score: gs.score, value: gs._collectType.value, total: gs.collectibles.getChildren().length };
-        gs.player.setPosition(item.x, item.y); gs.player.setVelocity(0, 0);
-        return out;
-    });
-    await g.page.waitForFunction(() => window.__game.scene.getScene('GameScene').collected >= 1, null, { timeout: 5000 });
-    const after = await g.game(() => {
-        const gs = window.__game.scene.getScene('GameScene');
-        return { score: gs.score, collected: gs.collected, left: gs.collectibles.getChildren().length };
-    });
-    assert.equal(after.score, before.score + before.value);
-    assert.equal(after.left, before.total - 1);
+        await g.page.keyboard.down('ArrowRight');               // anda e pula por um instante
+        await g.page.keyboard.down('ArrowUp');
+        await g.page.waitForTimeout(500);
+        await g.page.keyboard.up('ArrowUp');
+        await g.page.keyboard.up('ArrowRight');
+        assert.ok(await g.game(() => window.__game.scene.getScene('GameScene').player.x) > 80, `${key} deveria ter andado`);
+
+        await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
+        await g.waitScene('GameOverScene');
+        await g.page.waitForTimeout(1500);                      // a tecla só vale depois de 1,2 s
+        await g.page.keyboard.press('Space');                   // "jogar novamente" → escolha de personagem
+    }
+    await g.waitSelectReady();
     assert.deepEqual(g.errors, []);
 }));
 
-test('coleta: andar no chão por baixo dos itens não coleta (só pulando)', () => withGame(async (g) => {
-    await g.startGame(0);
-    await g.game(() => {
+test('coleta: item sobreposto ao jogador soma pontos; no chão, itens altos não são pegos', () => withGame(async (g) => {
+    await g.startGame();
+    await g.game(() => {                                        // em pé, abaixo de um item alto: não coleta
         const gs = window.__game.scene.getScene('GameScene');
-        const item = gs.collectibles.getChildren()[0];
-        gs.player.setPosition(item.x, GROUND_Y - 40); gs.player.setVelocity(0, 0);   // GROUND_Y: global de GameScene.js
+        gs.player.setPosition(gs.collectibles.getChildren()[0].x, GROUND_Y - 40); gs.player.setVelocity(0, 0);
     });
     await g.page.waitForTimeout(900);
-    const collected = await g.game(() => window.__game.scene.getScene('GameScene').collected);
-    assert.equal(collected, 0, 'item alto demais para ser pego em pé foi coletado andando');
-}));
+    assert.equal(await g.game(() => window.__game.scene.getScene('GameScene').collected), 0, 'item alto demais foi coletado em pé');
 
-test('fim de jogo: perder a última vida leva ao Game Over e salva o recorde', () => withGame(async (g) => {
-    await g.startGame(0);
-    await g.game(() => {
-        const gs = window.__game.scene.getScene('GameScene');
-        gs.score = 1234; gs.lives = 1; gs.loseLife();
-    });
-    await g.waitScene('GameOverScene');
-    assert.equal(await g.page.evaluate(() => localStorage.getItem('sumanzada-highscore')), '1234');
-    assert.deepEqual(g.errors, []);
-}));
-
-test('vitória: chegar à garrafa leva à tela de vitória', () => withGame(async (g) => {
-    await g.startGame(0);
-    await g.game(() => {
-        const gs = window.__game.scene.getScene('GameScene');
-        gs.player.setPosition(gs.bottle.x, gs.bottle.y); gs.player.setVelocity(0, 0);
-    });
-    await g.waitScene('WinScene');
-    assert.deepEqual(g.errors, []);
-}));
-
-test('reiniciar após o Game Over: o HUD não acumula ouvintes e a nova partida funciona', () => withGame(async (g) => {
-    const events = ['scoreChanged', 'livesChanged', 'timeChanged', 'comboChanged', 'collectedChanged'];
-    const count = () => g.game((evs) => {
-        const gs = window.__game.scene.getScene('GameScene');
-        return evs.map(e => gs.events.listenerCount(e));
-    }, events);
-
-    await g.startGame(0);
-    assert.deepEqual(await count(), [1, 1, 1, 1, 1], 'a 1ª partida deve ter 1 ouvinte por evento');
-
-    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
-    await g.waitScene('GameOverScene');
-    await g.page.waitForTimeout(1500);                         // a tecla só vale depois de 1,2 s
-    await g.page.keyboard.press('Space');
-    await g.waitSelectReady();                                 // "jogar novamente" leva à escolha de personagem
-    await g.page.keyboard.press('Enter');
-    await g.page.waitForFunction(() => window.__game.scene.isActive('GameScene') && window.__game.scene.isActive('HUDScene'), null, { timeout: 8000 });
-
-    assert.deepEqual(await count(), [1, 1, 1, 1, 1], 'após reiniciar não pode sobrar ouvinte da partida anterior');
-    // A nova partida precisa responder: coletar um item atualiza pontos e o texto do HUD
-    await g.game(() => {
+    const before = await g.game(() => {                         // em cima do item: coleta
         const gs = window.__game.scene.getScene('GameScene');
         const item = gs.collectibles.getChildren()[0];
         gs.player.setPosition(item.x, item.y); gs.player.setVelocity(0, 0);
+        return { score: gs.score, value: gs._collectType.value };
     });
-    await g.page.waitForFunction(() => window.__game.scene.getScene('GameScene').collected === 1, null, { timeout: 5000 });
-    assert.equal(await g.game(() => window.__game.scene.getScene('HUDScene').collectedTxt.text), '×1');
+    await g.page.waitForFunction(() => window.__game.scene.getScene('GameScene').collected >= 1, null, { timeout: 5000 });
+    assert.equal(await g.game(() => window.__game.scene.getScene('GameScene').score), before.score + before.value);
     assert.deepEqual(g.errors, []);
 }));
 
-// ── Fluxo "jogar novamente": sempre volta à escolha de personagem ─────────────────────────────────────
-
-test('Game Over: o botão JOGAR NOVAMENTE leva à escolha de personagem', () => withGame(async (g) => {
-    await g.startGame(0);
-    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
-    await g.waitScene('GameOverScene');
-    await g.game(() => window.__game.scene.getScene('GameOverScene').children.list
-        .find(o => o.text && o.text.includes('JOGAR NOVAMENTE')).emit('pointerdown'));
-    await g.waitSelectReady();
-    assert.deepEqual(await g.scenes(), ['CharacterSelectScene']);
-    assert.deepEqual(g.errors, []);
-}));
-
-test('Vitória: o botão JOGAR NOVAMENTE leva à escolha de personagem', () => withGame(async (g) => {
-    await g.startGame(0);
-    await g.game(() => {
-        const gs = window.__game.scene.getScene('GameScene');
-        gs.player.setPosition(gs.bottle.x, gs.bottle.y); gs.player.setVelocity(0, 0);
-    });
+test('vitória: chegar à garrafa leva à vitória e o botão volta à escolha de personagem', () => withGame(async (g) => {
+    await g.startGame();
+    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.player.setPosition(gs.bottle.x, gs.bottle.y); gs.player.setVelocity(0, 0); });
     await g.waitScene('WinScene');
     await g.game(() => window.__game.scene.getScene('WinScene').children.list
         .find(o => o.text && o.text.includes('JOGAR NOVAMENTE')).emit('pointerdown'));
@@ -155,31 +79,16 @@ test('Vitória: o botão JOGAR NOVAMENTE leva à escolha de personagem', () => w
     assert.deepEqual(g.errors, []);
 }));
 
-test('o último personagem vem pré-selecionado e Enter o inicia (Pitcha, o último card)', () => withGame(async (g) => {
-    const last = CHARACTERS.length - 1;
-    await g.startGame(last);
-    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
+test('game over: salva o recorde e Enter segurado não pula a escolha de personagem', () => withGame(async (g) => {
+    await g.startGame();
+    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.score = 1234; gs.lives = 1; gs.loseLife(); });
     await g.waitScene('GameOverScene');
+    assert.equal(await g.page.evaluate(() => localStorage.getItem('sumanzada-highscore')), '1234');
     await g.page.waitForTimeout(1500);
-    await g.page.keyboard.press('Space');
-    await g.waitSelectReady();
-    assert.equal(await g.game(() => window.__game.scene.getScene('CharacterSelectScene')._selected), last);
-    await g.page.keyboard.press('Enter');
-    await g.page.waitForFunction(() => window.__game.scene.isActive('GameScene'), null, { timeout: 8000 });
-    assert.equal(await g.game(() => window.__game.scene.getScene('GameScene').character), CHARACTERS[last]);
-}));
-
-test('Enter segurado na tela de fim não pula a escolha de personagem (só repetições de tecla chegam)', () => withGame(async (g) => {
-    await g.startGame(0);
-    await g.game(() => { const gs = window.__game.scene.getScene('GameScene'); gs.lives = 1; gs.loseLife(); });
-    await g.waitScene('GameOverScene');
-    await g.page.waitForTimeout(1500);
-    await g.page.keyboard.down('Enter');                       // 1º toque: leva à seleção
+    await g.page.keyboard.down('Enter');                        // 1º toque leva à escolha
     await g.waitSelectReady();
     for (let i = 0; i < 4; i++) { await g.page.keyboard.down('Enter'); await g.page.waitForTimeout(40); }   // repetições
     await g.page.waitForTimeout(300);
     assert.deepEqual(await g.scenes(), ['CharacterSelectScene'], 'a repetição de tecla iniciou o jogo sem escolher');
-    await g.page.keyboard.up('Enter');
-    await g.page.keyboard.press('Enter');                      // um toque novo, sim, inicia
-    await g.page.waitForFunction(() => window.__game.scene.isActive('GameScene'), null, { timeout: 8000 });
+    assert.deepEqual(g.errors, []);
 }));

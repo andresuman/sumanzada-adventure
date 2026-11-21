@@ -51,14 +51,14 @@ Qualquer servidor HTTP estático serve (o jogo carrega imagens, então abrir o `
 python3 -m http.server 8000   # abra http://localhost:8000
 ```
 
-Requisitos: um navegador moderno com Web Audio API (Chrome, Firefox, Safari ou Edge). Se um `.js` não atualizar,
+Requisitos: um navegador moderno com Web Audio API (Chrome, Firefox, Safari ou Edge). Se algo não atualizar,
 faça recarga forçada (`Ctrl+F5` / `Cmd+Shift+R`).
 
 ## Estrutura
 
 ```
 sumanzada-adventure/
-├── index.html               # Ponto de entrada; carrega os scripts com ?v=AAAAMMDD (cache-bust)
+├── index.html               # Ponto de entrada
 ├── game.js                  # Configuração do Phaser (480×270) e GAME_SETTINGS
 ├── Characters.js            # Lista única dos personagens (nome, item) e nomes das texturas
 ├── Collectibles.js          # Catálogo dos itens coletáveis e layout deles na fase
@@ -79,10 +79,9 @@ sumanzada-adventure/
 │   └── GameTheme.js         # Tema do jogo: valsa original em Fá maior
 ├── assets/                  # Imagens (PNG): personagens, capivara, cenário, itens
 ├── vendor/                  # Phaser 3.60.0 copiado para o repositório (sem CDN)
-├── tests/                   # Testes automáticos (só desenvolvimento)
+├── tests/                   # Teste de navegador (só desenvolvimento)
 ├── tools/                   # Ferramenta que prepara os PNGs de um personagem novo
-├── .github/                 # CI (testes a cada push), Dependabot e modelo de PR
-└── eslint.config.mjs        # Regras de lint
+└── .github/                 # CI: roda o teste a cada push
 ```
 
 ## Adicionar um personagem
@@ -93,20 +92,19 @@ sumanzada-adventure/
 2. **Item:** `assets/item_<nome>.png` com 96 px de largura e um tipo novo em `COLLECTIBLE_TYPES`
    (`Collectibles.js`).
 3. **Lista:** uma linha em `Characters.js` com a chave, o nome do card e o item.
-4. Rode os testes. Cards, animações, tela de seleção e testes de navegador se ajustam sozinhos.
+4. Rode o teste. Cards, animações e tela de seleção se ajustam sozinhos.
 
-## Testes
+## Teste
 
-Os testes ficam em `tests/` e são só de desenvolvimento: o jogo em si continua sem build e sem npm.
+O teste fica em `tests/` e é só de desenvolvimento: o jogo em si continua sem build e sem npm. Ele abre o jogo no
+Chromium, percorre os cinco personagens, coleta, vitória e game over, e falha em qualquer erro ou arquivo faltando.
 
 ```bash
-cd tests && npm ci
-npm run lint          # ESLint
-npm test              # verificações estáticas: sprites, assets, index.html, música, itens, documentos (segundos)
-npm run test:smoke    # abre o jogo no Chromium e percorre o fluxo (precisa do Playwright)
+cd tests && npm install && npx playwright install chromium
+npm test
 ```
 
-Rodam automaticamente no GitHub Actions a cada push e pull request (`.github/workflows/testes.yml`).
+Roda automaticamente no GitHub Actions a cada push e pull request.
 
 ## Licença
 
