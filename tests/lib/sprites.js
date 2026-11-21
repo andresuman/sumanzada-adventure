@@ -2,6 +2,8 @@
 
 const isOpaque = (p) => p[3] > 0;
 // Contorno preto dos sprites; o limite foi calibrado nos sprites atuais.
+// Soma r+g+b abaixo disso = cabelo escuro/sombra (não é recorte furado)
+const DARK_SUM = 270;
 const isBlack  = (p) => p[3] > 0 && p[0] < 45 && p[1] < 45 && p[2] < 45;
 
 // Pixels com alpha parcial (o jogo usa pixel art: só 0 ou 255).
@@ -58,7 +60,7 @@ function enclosedHoles(img) {
 
 // Faixas verticais de pixels opacos (não pretos) de 1 a `maxWidth` px de largura entre dois
 // contornos pretos, com pelo menos `minRows` linhas seguidas. É o vão entre braço e corpo
-// que deveria ser transparente. Dedos e detalhes de camisa são curtos e ficam abaixo de minRows.
+// que deveria ser transparente. Dedos e detalhes de camisa são curtos e ficam abaixo de minRows; cabelo escuro é ignorado (DARK_SUM).
 // Retorna [{ x0, x1, y0, y1, rows }].
 function opaqueGapStrips(img, { maxWidth = 8, minRows = 12, minBlackRun = 3 } = {}) {
     const rowsGaps = [];   // por linha: [{x0,x1}]
@@ -78,9 +80,11 @@ function opaqueGapStrips(img, { maxWidth = 8, minRows = 12, minBlackRun = 3 } = 
             const g0 = e0 + 1, g1 = s1 - 1, width = g1 - g0 + 1;
             if (e0 - s0 + 1 < minBlackRun || e1 - s1 + 1 < minBlackRun) continue;
             if (width < 1 || width > maxWidth) continue;
-            let anyOpaque = false;
-            for (let xx = g0; xx <= g1; xx++) if (isOpaque(img.px(xx, y))) { anyOpaque = true; break; }
-            if (anyOpaque) gaps.push({ x0: g0, x1: g1 });
+            // Só conta conteúdo claro (pele, roupa, sapato). Mechas de cabelo escuro e sombras entre
+            // contornos pretos são arte legítima, não o vão de recorte que queremos achar.
+            let anyContent = false;
+            for (let xx = g0; xx <= g1; xx++) { const p = img.px(xx, y); if (isOpaque(p) && p[0] + p[1] + p[2] > DARK_SUM) { anyContent = true; break; } }
+            if (anyContent) gaps.push({ x0: g0, x1: g1 });
         }
         rowsGaps.push(gaps);
     }

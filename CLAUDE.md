@@ -251,11 +251,29 @@ npm run test:smoke  # Chromium via Playwright: fluxo de cenas, itens, game over,
 ```
 
 - O jogo expõe `window.__game` (game.js) para os testes de navegador lerem o estado das cenas. Não remover.
-- **Sprites:** `tests/lib/sprites.js` detecta alpha parcial, buracos no rosto e faixas opacas entre contornos pretos (vão braço/corpo). Faixas ainda não revisadas da Thais/Rafinha estão em `tests/static/sprite-baseline.json`; qualquer faixa nova falha. Ao corrigir um sprite, rode `UPDATE_BASELINE=1 npm test` para encolher a linha de base.
+- **Sprites:** `tests/lib/sprites.js` detecta alpha parcial, buracos no rosto e faixas opacas entre contornos pretos (vão braço/corpo). Faixas ainda não revisadas (cabelo escuro entre contornos é ignorado) estão em `tests/static/sprite-baseline.json`; qualquer faixa nova falha. Ao corrigir um sprite, rode `UPDATE_BASELINE=1 npm test` para encolher a linha de base.
 - **PNG sem uso:** só gera aviso no log (imagens sobem pelo GitHub antes do código). `STRICT_UNUSED=1 npm test` torna bloqueante.
 - **Cache-bust:** o teste falha se o `?v=` de um script no `index.html` for mais antigo que a última alteração dele (tolerância de 1 dia).
 - O Phaser vem do CDN no jogo; nos testes usa-se a cópia do npm (devDependency `phaser`) ou `PHASER_FILE=/caminho/phaser.min.js`.
 - Novo personagem/item/música: os testes de `tests/static` cobrem as referências cruzadas automaticamente; adicione um caso em `tests/smoke` se mudar o fluxo.
+
+---
+
+## Ferramentas (tools/)
+
+`tools/sheet_to_sprites.py` transforma uma folha de frames (JPEG/PNG gerada por IA) nos PNGs de um personagem
+(`<nome>_idle.png` + `<nome>_walk1..N.png`). Só desenvolvimento (precisa de Pillow e numpy); o jogo segue sem build.
+
+```bash
+python3 tools/sheet_to_sprites.py folha.jpg --name marilia --cols 2 --rows 2 --idle-from 3 --out assets --preview /tmp/preview.png
+python3 tools/sheet_to_sprites.py folha.jpg --name marilia --idle-image pose_parada.png --out assets   # idle separado, mesma escala
+```
+
+Por que existe: recortar cada frame "rente ao desenho" dá canvas de larguras diferentes e o personagem balança
+ao andar (a Pitcha chegou a variar ~24 px no vestido). O script remove o fundo (com ruído de JPEG e halo), usa **uma
+escala única**, alinha o **centro de massa do corpo** no centro de um canvas de largura única, põe os pés na base
+(altura 302, como os demais) e refaz a sola do sapato quando ela foi cortada pela borda da folha. Resultado medido:
+variação de ~1,5 px entre frames.
 
 ---
 
