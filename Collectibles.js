@@ -66,7 +66,7 @@ const COLLECTIBLE_TYPES = {
         scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
         groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
-        color:   '#ff9900',        // dourado — cor do texto flutuante e do contador no HUD
+        color:   '#ff7ab8',        // rosa — cor do texto flutuante e do contador no HUD (combina com o novelo)
         spin:    false,            // novelo não gira como a moeda
         // Arpejo curto; cada nota é [frequência Hz, atraso em s]
         sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
