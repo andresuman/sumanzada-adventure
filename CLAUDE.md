@@ -47,7 +47,7 @@ BootScene → TitleScene → CharacterSelectScene → GameScene + HUDScene (para
 
 - `CHARACTERS` (`Characters.js`): `key`, `name`, `collectible`. `BootScene`, `GameScene` e a seleção leem
   daí. As chaves dos arquivos são antigas e não foram renomeadas: `andre`=Dedé, `thais`=Tatá, `rafinha`,
-  `marcela`=Pitu, `marilia`=Pitcha, `solange`=Gê, `texaco`=Caco, `gianluca`=Gianluca (bicicleta: o "andar" é a pedalada; canvas de 250 px de altura), `livia`=Lívia (bailarina: o "andar" é a dança; canvas de 270 px).
+  `marcela`=Pitu, `marilia`=Pitcha, `solange`=Gê, `texaco`=Caco, `gianluca`=Gianluca (bicicleta: o "andar" é a pedalada), `livia`=Lívia (bailarina: o "andar" é a dança).
 - `COLLECTIBLE_TYPES` (`Collectibles.js`): um tipo por item (`texture`, `value`, `groupBonus`, `color`, `sfx` e `draw`
   **ou** `image`). `coin` é o item padrão (fallback). `COLLECTIBLE_LAYOUT` é igual para todos.
 - **Personagem novo:** PNGs `assets/<chave>_idle.png` + `<chave>_walk1..4.png` (altura 302 px, fundo transparente,
