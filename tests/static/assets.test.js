@@ -9,8 +9,10 @@ const { semiTransparentCount, enclosedHoles, opaqueGapStrips } = require('../lib
 
 const ASSETS = path.join(ROOT, 'assets');
 const pngs = fs.readdirSync(ASSETS).filter(f => f.endsWith('.png')).sort();
-const characters = ['andre', 'thais', 'rafinha'];
+// Personagens descobertos pelos arquivos (<nome>_idle.png): um novo personagem entra nos testes sozinho
+const characters = pngs.filter(f => f.endsWith('_idle.png')).map(f => f.replace('_idle.png', ''));
 const characterPngs = pngs.filter(f => characters.some(c => f.startsWith(c + '_')));
+const MAX_FACE_HOLE_PX = 40;
 const BASELINE_FILE = path.join(__dirname, 'sprite-baseline.json');
 
 // ── Assets × código ─────────────────────────────────────────────────────────
@@ -44,7 +46,9 @@ test('rosto dos personagens não tem buracos transparentes (olhos, dentes, boche
         const img = loadPng(path.join(ASSETS, f));
         const faceLimit = img.h * 0.35;   // o rosto fica no terço superior do sprite
         for (const h of enclosedHoles(img)) {
-            if (h.y0 < faceLimit) problems.push(`${f}: buraco de ${h.n}px em x${h.x0}-${h.x1}, y${h.y0}-${h.y1}`);
+            // Buracos de poucos pixels são recorte furado (olho, dente, bochecha). Os grandes são
+            // espaço de propósito (ex.: entre o rabo de cavalo e o pescoço) e não entram aqui.
+            if (h.y0 < faceLimit && h.n <= MAX_FACE_HOLE_PX) problems.push(`${f}: buraco de ${h.n}px em x${h.x0}-${h.x1}, y${h.y0}-${h.y1}`);
         }
     }
     assert.deepEqual(problems, []);

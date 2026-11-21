@@ -10,7 +10,9 @@ async function withGame(fn, opts) {
     try { await fn(g); } finally { await g.close(); }
 }
 
-const CHARACTERS = ['andre', 'thais', 'rafinha'];   // ordem dos cards em CharacterSelectScene
+// Ordem dos cards em CharacterSelectScene, lida do código: personagem novo entra no teste sozinho
+const CHARACTERS = [...require('../lib/project').read('scenes/CharacterSelectScene.js')
+    .matchAll(/\{\s*key:\s*'(\w+)',\s*name:/g)].map(m => m[1]);
 
 test('abre o jogo, escolhe personagem e joga alguns segundos sem erros', () => withGame(async (g) => {
     await g.startGame(0);
@@ -25,6 +27,7 @@ test('abre o jogo, escolhe personagem e joga alguns segundos sem erros', () => w
     assert.deepEqual(g.errors, []);
 }));
 
+assert.ok(CHARACTERS.length >= 3, 'não encontrei os personagens em CharacterSelectScene.js');
 for (const [i, character] of CHARACTERS.entries()) {
     test(`personagem ${character}: usa o sprite e o item configurados`, () => withGame(async (g) => {
         await g.startGame(i);
