@@ -30,7 +30,7 @@ const COLLECTIBLE_TYPES = {
     accordion: {
         texture: 'item_accordion', // chave da textura no Phaser
         image:   'assets/item_accordion.png', // PNG carregado em BootScene
-        scale:   0.5,              // 96px -> 48px no jogo
+        scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
         groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
         color:   '#ff5555',        // cor do texto flutuante (+50) e do contador no HUD
@@ -41,7 +41,7 @@ const COLLECTIBLE_TYPES = {
     shoe: {
         texture: 'item_shoe',      // chave da textura no Phaser
         image:   'assets/item_shoe.png', // PNG carregado em BootScene
-        scale:   0.5,              // 96px -> 48px no jogo
+        scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
         groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
         color:   '#aaff00',        // verde volt — cor do texto flutuante e do contador no HUD
