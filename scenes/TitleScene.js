@@ -9,7 +9,9 @@ class TitleScene extends Phaser.Scene {
             if (!window.MusicManager.isPlaying('game-theme')) {
                 window.MusicManager.play('game-theme', { loop: true });
             }
-        } catch (e) {}
+        } catch {
+            // Música é opcional: se não puder tocar, o jogo segue normalmente
+        }
     }
 
     async _ensureAudioUnlocked() {
@@ -19,7 +21,9 @@ class TitleScene extends Phaser.Scene {
             if (window.AudioUnlock && window.AudioUnlock.unlock) {
                 await window.AudioUnlock.unlock();
             }
-        } catch (e) {}
+        } catch {
+            // Desbloqueio é por melhor esforço; o próximo gesto tenta de novo
+        }
     }
 
     create() {

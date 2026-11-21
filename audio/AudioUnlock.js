@@ -13,7 +13,9 @@
         if (!ac) return;
         try {
             if (ac.state === 'suspended') await ac.resume();
-        } catch (e) {}
+        } catch {
+            // Sem permissão agora: o próximo gesto do jogador tenta de novo
+        }
     }
 
     // Alguns browsers só desbloqueiam completamente quando algo é agendado no grafo de áudio.
@@ -29,7 +31,9 @@
             const t = ac.currentTime;
             o.start(t);
             o.stop(t + 0.02);
-        } catch (e) {}
+        } catch {
+            // O bip é só para forçar o desbloqueio; se falhar, o som do jogo segue sem ele
+        }
     }
 
     window.AudioUnlock = window.AudioUnlock || {

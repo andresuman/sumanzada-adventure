@@ -3,13 +3,18 @@
   "private": true,
   "description": "Testes de desenvolvimento. O jogo em si continua sem build e sem npm.",
   "scripts": {
+    "lint": "cd .. && eslint --config eslint.config.mjs .",
     "test": "node --test static/*.test.js",
     "test:smoke": "node --test smoke/*.test.js",
-    "test:all": "node --test static/*.test.js smoke/*.test.js"
+    "test:all": "npm run lint && npm test && npm run test:smoke"
   },
   "devDependencies": {
     "playwright": "1.49.1",
     "pngjs": "7.0.0",
-    "phaser": "3.60.0"
+    "phaser": "3.60.0",
+    "eslint": "9.39.5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

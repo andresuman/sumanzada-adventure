@@ -1,0 +1,7 @@
+# Fim de linha sempre LF (evita diferenças entre macOS/Windows/Linux)
+* text=auto eol=lf
+
+# Imagens e binários: nunca converter nem comparar como texto
+*.png binary
+*.jpg binary
+*.jpeg binary

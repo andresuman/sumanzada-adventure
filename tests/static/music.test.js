@@ -24,7 +24,7 @@ for (const voice of ['lead', 'bass']) {
         const problems = [];
         for (const e of events) {
             const isRest = String(e.note).toUpperCase() === 'R';
-            if (!isRest && noteToFreq(e.note) == null) problems.push(`nota inválida: ${e.note}`);
+            if (!isRest && noteToFreq(e.note) === null) problems.push(`nota inválida: ${e.note}`);
             if (!(e.beats > 0)) problems.push(`duração inválida em ${e.note}: ${e.beats}`);
             if (!(e.startBeat >= 0)) problems.push(`início inválido em ${e.note}: ${e.startBeat}`);
             if (e.startBeat + e.beats > song.totalBeats + 1e-9) problems.push(`${e.note} em ${e.startBeat} passa do fim (${song.totalBeats})`);

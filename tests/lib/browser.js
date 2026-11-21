@@ -11,7 +11,7 @@ function phaserFile() {
     return fs.existsSync(npm) ? npm : null;
 }
 
-async function openGame({ storage } = {}) {
+async function openGame() {
     const { chromium } = require('playwright');
     const server = await startServer();
     const browser = await chromium.launch();

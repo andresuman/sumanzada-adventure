@@ -24,11 +24,11 @@
     }
 
     function noteToFreq(note) {
-        if (note == null) return null;
+        if (note === null || note === undefined) return null;
         const n = String(note).trim();
         if (!n || n.toUpperCase() === 'R' || n.toLowerCase() === 'rest') return null;
         const midi = noteToMidi(n);
-        return midi == null ? null : midiToFreq(midi);
+        return midi === null ? null : midiToFreq(midi);
     }
 
     function durationTokenToBeats(tok) {
@@ -86,7 +86,9 @@
             const ac = this.ensureAudioContext();
 
             // Política de autoplay: o resume pode precisar ser disparado por um gesto do usuário.
-            try { if (ac.state === 'suspended') await ac.resume(); } catch (e) {}
+            try { if (ac.state === 'suspended') await ac.resume(); } catch {
+                // O navegador ainda bloqueia o áudio: a música começa no próximo gesto do jogador
+            }
 
             this._loop = !(opts && opts.loop === false);
             this._nextStart = ac.currentTime + 0.06;
@@ -101,7 +103,9 @@
             this._scheduled.forEach(n => {
                 try {
                     if (n.stop) n.stop(now);
-                } catch (e) {}
+                } catch {
+                    // Oscilador que já terminou lança ao receber stop(): é seguro ignorar
+                }
             });
             this._scheduled = [];
         }

@@ -475,7 +475,9 @@ class GameScene extends Phaser.Scene {
             }
             if (this._ac.state === 'suspended') this._ac.resume();
             fn(this._ac);
-        } catch (e) {}
+        } catch {
+            // Sem áudio disponível (ou bloqueado): o jogo nunca pode quebrar por causa de um efeito sonoro
+        }
     }
 
     sndJump() {
