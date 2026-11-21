@@ -43,6 +43,7 @@ A escolha muda o personagem e o item que ele coleta; o jogo é o mesmo para todo
 | Pitu | cabeça da Hello Kitty |
 | Pitcha | novelo de lã |
 | Gê | ás de espadas |
+| Caco | bola de futebol |
 
 ## Rodar localmente
 

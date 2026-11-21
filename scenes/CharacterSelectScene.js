@@ -38,25 +38,21 @@ class CharacterSelectScene extends Phaser.Scene {
         const cards = CHARACTERS.map(c => ({
             key: c.key,
             name: c.name,
-            tag: `SELECIONAD${c.feminine ? 'A' : 'O'}`,
             idle: characterTextures(c.key).idle,
         }));
         const n = cards.length;
         this._count = n;
 
         // Layout (480×270): título no alto, grade de cards no meio e botão embaixo.
-        // Os cards ficam em 2 linhas (metade em cada; a última linha é centralizada) e cada um tem o
-        // sprite à esquerda e nome + rótulo à direita.
+        // Os cards ficam em 2 linhas (metade em cada; a última linha é centralizada), com o sprite em cima e o
+        // nome embaixo: assim cabem 4 colunas (~109 px) sem apertar o nome. A seleção aparece na borda amarela.
         const COLS = Math.ceil(n / 2);
         this._cols = COLS;
         const ROWS = Math.ceil(n / COLS);
         const MARGIN = 12, GAP = 6;
         const CARD_W = Math.min(148, Math.floor((W - 2 * MARGIN - (COLS - 1) * GAP) / COLS));
-        const CARD_H = 80, GRID_TOP = 44;
-        const SPRITE_AREA_W = 68, PAD = 6;
-        const SPRITE_MAX_W = SPRITE_AREA_W, SPRITE_MAX_H = CARD_H - 2 * PAD;
-        const SPRITE_X = -CARD_W / 2 + PAD + SPRITE_AREA_W / 2;           // centro do sprite, relativo ao card
-        const TEXT_X = (-CARD_W / 2 + PAD + SPRITE_AREA_W + CARD_W / 2 - PAD) / 2;   // centro do espaço que sobra à direita
+        const CARD_H = 84, GRID_TOP = 44, PAD = 6;
+        const SPRITE_MAX_W = CARD_W - 2 * PAD, SPRITE_MAX_H = 52;
         const cardPos = (i) => {
             const row = Math.floor(i / COLS), inRow = row === ROWS - 1 ? n - row * COLS : COLS;
             return {
@@ -68,6 +64,7 @@ class CharacterSelectScene extends Phaser.Scene {
         this._cards = [];
         cards.forEach((ch, i) => {
             const { cx, cy } = cardPos(i);
+            const top = cy - CARD_H / 2;
             const container = this.add.container(cx, 0);
 
             // Fundo do card: painel escuro, borda branca; amarela quando selecionado
@@ -75,27 +72,19 @@ class CharacterSelectScene extends Phaser.Scene {
             bg.setStrokeStyle(3, 0xffffff);
             container.add(bg);
 
-            // Escala para caber na área do sprite; pés na mesma linha em todos os cards
+            // Escala para caber na caixa do sprite; pés na mesma linha em todos os cards
             const src = this.textures.get(ch.idle).getSourceImage();
             const fit = Math.min(SPRITE_MAX_W / src.width, SPRITE_MAX_H / src.height);
-            const sprite = this.add.image(SPRITE_X, cy + CARD_H / 2 - PAD, ch.idle).setOrigin(0.5, 1).setScale(fit);
+            const sprite = this.add.image(0, top + PAD + SPRITE_MAX_H, ch.idle).setOrigin(0.5, 1).setScale(fit);
             container.add(sprite);
 
-            const name = txt(TEXT_X, cy - 6, ch.name, {
+            const name = txt(0, top + PAD + SPRITE_MAX_H + 13, ch.name, {
                 fontSize: '11px',
                 color: '#ffffff',
                 stroke: '#000000',
                 strokeThickness: 3
             });
             container.add(name);
-
-            const tag = txt(TEXT_X, cy + 10, ch.tag, {
-                fontSize: '8px',
-                color: '#ffe040',
-                stroke: '#000000',
-                strokeThickness: 3
-            }).setVisible(false);
-            container.add(tag);
 
             // Zona clicável do card inteiro
             const zone = this.add.zone(0, cy, CARD_W, CARD_H)
@@ -105,7 +94,7 @@ class CharacterSelectScene extends Phaser.Scene {
             zone.on('pointerout',  () => { if (this._selected !== i) bg.setStrokeStyle(3, 0xffffff); });
             container.add(zone);
 
-            this._cards.push({ key: ch.key, bg, tag, sprite, container });
+            this._cards.push({ key: ch.key, bg, sprite, container });
         });
 
         // Botão começar (mesmo estilo do JOGAR da TitleScene)
@@ -142,7 +131,6 @@ class CharacterSelectScene extends Phaser.Scene {
         this._cards.forEach((card, j) => {
             const selected = j === i;
             card.bg.setStrokeStyle(3, selected ? 0xffe040 : 0xffffff);
-            card.tag.setVisible(selected);
             card.sprite.setAlpha(selected ? 1 : 0.8);   // destaca o escolhido sem esconder os outros
             // Card selecionado sobe 4px (mesmo efeito do protótipo)
             card.container.setY(selected ? -4 : 0);
