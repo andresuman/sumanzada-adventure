@@ -38,12 +38,13 @@ class CharacterSelectScene extends Phaser.Scene {
         // ── Personagens  ──
         // Rafinha usa escala menor no card: o carrinho é largo (335px), os outros têm ~190px.
         const CHARACTERS = [
-            { key: 'andre', name: 'DEDÉ',   desc: 'Torcedor do Ravens.',                   tag: '▶ SELECIONADO ◀',  idle: 'andre_idle', scale: 0.30 },
-            { key: 'thais', name: 'TATÁ', desc: 'Química e maratonista.',                        tag: '▶ SELECIONADA ◀', idle: 'thais_idle', scale: 0.30 },
-            { key: 'rafinha', name: 'RAFINHA',     desc: 'Fã de Ray Conniff.',                            tag: '▶ SELECIONADO ◀',  idle: 'rafinha_idle', scale: 0.24 },
+            { key: 'andre', name: 'DEDÉ',   tag: '▶ SELECIONADO ◀',  idle: 'andre_idle', scale: 0.30 },
+            { key: 'thais', name: 'TATÁ', tag: '▶ SELECIONADA ◀', idle: 'thais_idle', scale: 0.30 },
+            { key: 'rafinha', name: 'RAFINHA',     tag: '▶ SELECIONADO ◀',  idle: 'rafinha_idle', scale: 0.24 },
+            { key: 'marcela', name: 'PITU',     tag: '▶ SELECIONADA ◀',  idle: 'marcela_idle', scale: 0.30 },
         ];
         const CARD_W = 110, CARD_H = 180, CARD_Y = 128;
-        const CARD_XS = [120, 240, 360];
+        const CARD_XS = [65, 182, 298, 415];
 
         this._cards = [];
         CHARACTERS.forEach((ch, i) => {
@@ -65,13 +66,6 @@ class CharacterSelectScene extends Phaser.Scene {
                 strokeThickness: 3
             });
             container.add(name);
-
-            const desc = this.add.text(0, 160, ch.desc, {
-                fontFamily: 'monospace', fontSize: '10px', resolution: 3,
-                color: '#ffffff', stroke: '#000000', strokeThickness: 2,
-                align: 'center', wordWrap: { width: CARD_W - 16 }, lineSpacing: 4,
-            }).setOrigin(0.5, 0);
-            container.add(desc);
 
             const tag = txt(0, 206, ch.tag, {
                 fontSize: '9px',
@@ -109,8 +103,8 @@ class CharacterSelectScene extends Phaser.Scene {
         this.tweens.add({ targets: btn, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
 
         // Teclado: setas trocam o personagem, Enter começa, Esc volta
-        this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + 2) % 3));
-        this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % 3));
+        this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + 3) % 4));
+        this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % 4));
         this.input.keyboard.on('keydown-ENTER', () => this._startGame());
         this.input.keyboard.on('keydown-ESC',   () => this.scene.start('TitleScene'));
 

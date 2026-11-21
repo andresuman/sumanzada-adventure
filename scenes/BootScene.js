@@ -22,6 +22,13 @@ class BootScene extends Phaser.Scene {
         this.load.image('rafinha_walk3', 'assets/rafinha_walk3.png');
         this.load.image('rafinha_walk4', 'assets/rafinha_walk4.png');
 
+        // Marcela: camiseta preta florida, calça jeans (idle + 4 frames de caminhada)
+        this.load.image('marcela_idle',  'assets/marcela_idle.png');
+        this.load.image('marcela_walk1', 'assets/marcela_walk1.png');
+        this.load.image('marcela_walk2', 'assets/marcela_walk2.png');
+        this.load.image('marcela_walk3', 'assets/marcela_walk3.png');
+        this.load.image('marcela_walk4', 'assets/marcela_walk4.png');
+
         // Inimigos
         this.load.image('capy_walk1', 'assets/capy_walk1.png');
         this.load.image('capy_walk2', 'assets/capy_walk2.png');
@@ -70,6 +77,15 @@ class BootScene extends Phaser.Scene {
             frames: [
                 { key:'rafinha_walk1' }, { key:'rafinha_walk2' },
                 { key:'rafinha_walk3' }, { key:'rafinha_walk4'  }
+            ], frameRate:8, repeat:-1 });
+
+        // Animações da Marcela
+        this.anims.create({ key: 'marcela-idle',
+            frames: [{ key:'marcela_idle' }], frameRate:1, repeat:-1 });
+        this.anims.create({ key: 'marcela-walk',
+            frames: [
+                { key:'marcela_walk1' }, { key:'marcela_walk2' },
+                { key:'marcela_walk3' }, { key:'marcela_walk4'  }
             ], frameRate:8, repeat:-1 });
 
         // Animações da capivara

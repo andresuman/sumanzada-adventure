@@ -49,6 +49,17 @@ const COLLECTIBLE_TYPES = {
         // Arpejo curto; cada nota é [frequência Hz, atraso em s]
         sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
     },
+    kitty: {
+        texture: 'item_kitty',     // chave da textura no Phaser
+        image:   'assets/item_kitty.png', // PNG carregado em BootScene
+        scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#ff77aa',        // rosa — cor do texto flutuante e do contador no HUD
+        spin:    false,            // cabeça não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
 };
 
 // Grupos de itens ao longo da fase (x em px do mundo).

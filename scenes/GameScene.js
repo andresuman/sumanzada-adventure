@@ -18,6 +18,7 @@ const CHARACTERS = {
     andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk', collectible: 'accordion' },
     thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk', collectible: 'shoe' },
     rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk', collectible: 'coin' },
+    marcela: { idle: 'marcela_idle', idleAnim: 'marcela-idle', walkAnim: 'marcela-walk', collectible: 'kitty' },
 };
 
 // Parâmetros de spawn das capivaras
