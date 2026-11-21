@@ -12,3 +12,7 @@
 
 # Dependências dos testes (tests/package.json)
 node_modules/
+
+# Cache do Python (tools/)
+__pycache__/
+*.pyc

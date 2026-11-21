@@ -269,6 +269,17 @@ python3 tools/sheet_to_sprites.py folha.jpg --name marilia --cols 2 --rows 2 --i
 python3 tools/sheet_to_sprites.py folha.jpg --name marilia --idle-image pose_parada.png --out assets   # idle separado, mesma escala
 ```
 
+`--normalize-parts --head-target 130 --legs-target 72` iguala **cabeça** (topo do cabelo→pescoço) e **pernas** (barra da saia→pés) entre os frames,
+mantendo o tronco. Existe porque frames gerados por IA derivam de proporção: na Pitcha a cabeça encolhia 22% e as pernas cresciam 27% do idle ao
+último frame de caminhada (o tronco era igual), e nenhuma escala única corrige isso. Os pontos de referência (olhos, pescoço, barra) são detectados
+pela roupa/rosto dela (vestido azul, listras vermelhas); para outro personagem passe `--landmarks arquivo.json` com `eye_y`, `neck_y`, `hem_y`
+medidos à mão. Comando usado na Pitcha:
+
+```bash
+python3 tools/sheet_to_sprites.py folha.jpg --name marilia --idle-image pose_parada.png \
+    --normalize-parts --head-target 130 --legs-target 72 --out assets
+```
+
 Por que existe: recortar cada frame "rente ao desenho" dá canvas de larguras diferentes e o personagem balança
 ao andar (a Pitcha chegou a variar ~24 px no vestido). O script remove o fundo (com ruído de JPEG e halo), usa **uma
 escala única**, alinha o **centro de massa do corpo** no centro de um canvas de largura única, põe os pés na base
