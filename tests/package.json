@@ -9,10 +9,10 @@
     "test:all": "npm run lint && npm test && npm run test:smoke"
   },
   "devDependencies": {
-    "playwright": "1.49.1",
+    "playwright": "1.65.1",
     "pngjs": "7.0.0",
-    "phaser": "3.60.0",
-    "eslint": "9.39.5"
+    "phaser": "4.2.1",
+    "eslint": "10.15.0"
   },
   "engines": {
     "node": ">=22"
