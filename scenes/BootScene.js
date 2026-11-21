@@ -29,6 +29,13 @@ class BootScene extends Phaser.Scene {
         this.load.image('marcela_walk3', 'assets/marcela_walk3.png');
         this.load.image('marcela_walk4', 'assets/marcela_walk4.png');
 
+        // Marília: vestidinho azul-marinho com listras vermelha e branca (idle + 4 frames de caminhada)
+        this.load.image('marilia_idle',  'assets/marilia_idle.png');
+        this.load.image('marilia_walk1', 'assets/marilia_walk1.png');
+        this.load.image('marilia_walk2', 'assets/marilia_walk2.png');
+        this.load.image('marilia_walk3', 'assets/marilia_walk3.png');
+        this.load.image('marilia_walk4', 'assets/marilia_walk4.png');
+
         // Inimigos
         this.load.image('capy_walk1', 'assets/capy_walk1.png');
         this.load.image('capy_walk2', 'assets/capy_walk2.png');
@@ -86,6 +93,15 @@ class BootScene extends Phaser.Scene {
             frames: [
                 { key:'marcela_walk1' }, { key:'marcela_walk2' },
                 { key:'marcela_walk3' }, { key:'marcela_walk4'  }
+            ], frameRate:8, repeat:-1 });
+
+        // Animações da Marília
+        this.anims.create({ key: 'marilia-idle',
+            frames: [{ key:'marilia_idle' }], frameRate:1, repeat:-1 });
+        this.anims.create({ key: 'marilia-walk',
+            frames: [
+                { key:'marilia_walk1' }, { key:'marilia_walk2' },
+                { key:'marilia_walk3' }, { key:'marilia_walk4'  }
             ], frameRate:8, repeat:-1 });
 
         // Animações da capivara

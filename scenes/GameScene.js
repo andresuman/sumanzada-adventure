@@ -17,8 +17,9 @@ const TIME_START  = 60;     // 1 minuto em segundos
 const CHARACTERS = {
     andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk', collectible: 'accordion' },
     thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk', collectible: 'shoe' },
-    rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk', collectible: 'coin' },
+    rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk', collectible: 'conniff' },
     marcela: { idle: 'marcela_idle', idleAnim: 'marcela-idle', walkAnim: 'marcela-walk', collectible: 'kitty' },
+    marilia: { idle: 'marilia_idle', idleAnim: 'marilia-idle', walkAnim: 'marilia-walk', collectible: 'yarn' },
 };
 
 // Parâmetros de spawn das capivaras

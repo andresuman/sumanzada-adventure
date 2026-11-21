@@ -60,6 +60,28 @@ const COLLECTIBLE_TYPES = {
         // Arpejo curto; cada nota é [frequência Hz, atraso em s]
         sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
     },
+    yarn: {
+        texture: 'item_yarn',      // chave da textura no Phaser
+        image:   'assets/item_yarn.png', // PNG carregado em BootScene
+        scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#ff9900',        // dourado — cor do texto flutuante e do contador no HUD
+        spin:    false,            // novelo não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
+    conniff: {
+        texture: 'item_rayconniff', // chave da textura no Phaser
+        image:   'assets/item_rayconniff.png', // PNG carregado em BootScene
+        scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#66aaff',        // azul — cor do texto flutuante e do contador no HUD
+        spin:    false,            // rosto não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
 };
 
 // Grupos de itens ao longo da fase (x em px do mundo).
