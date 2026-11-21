@@ -19,6 +19,17 @@ class HUDScene extends Phaser.Scene {
             stroke: '#000000', strokeThickness: 3,
         }).setOrigin(0, 0);
 
+        // ── Contador de itens (ícone = textura do item do personagem escolhido) ──
+        const type = this.gameScene._collectType;
+        if (type) {
+            const icon = this.add.image(50, 30, type.texture).setOrigin(0.5);
+            icon.setScale(10 / icon.height);
+            this.collectedTxt = this.add.text(58, 24, `×${this.gameScene.collected}`, {
+                fontFamily: 'monospace', fontSize: '11px', color: type.color,
+                stroke: '#000000', strokeThickness: 3,
+            });
+        }
+
         // ── Vidas (corações) — centro da tela ────────────────────────────────
         this.heartIcons = [];
         for (let i = 0; i < LIVES_START; i++) {
@@ -40,6 +51,10 @@ class HUDScene extends Phaser.Scene {
         // ── Ouvir eventos do GameScene ────────────────────────────────────────
         this.gameScene.events.on('scoreChanged', (v) => {
             this.scoreTxt.setText(String(v).padStart(5, '0'));
+        });
+
+        this.gameScene.events.on('collectedChanged', (v) => {
+            if (this.collectedTxt) this.collectedTxt.setText(`×${v}`);
         });
 
         this.gameScene.events.on('livesChanged', (v) => {

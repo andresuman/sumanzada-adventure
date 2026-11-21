@@ -36,6 +36,7 @@ sumanzada-adventure/
 ├── index.html              # Entrada; carrega scripts com ?v=YYYYMMDD
 ├── game.js                 # Config Phaser (480×270) + window.GAME_SETTINGS
 ├── HighScore.js            # Recorde em localStorage (chave 'sumanzada-highscore')
+├── Collectibles.js         # COLLECTIBLE_TYPES (catálogo) e COLLECTIBLE_LAYOUT (posições)
 ├── scenes/
 │   ├── BootScene.js            # preload() de assets + animações → TitleScene
 │   ├── TitleScene.js           # Tela inicial; toggle de música; recorde
@@ -114,6 +115,18 @@ BootScene → TitleScene → CharacterSelectScene → GameScene + HUDScene (para
 
 ---
 
+## Itens coletáveis (Collectibles.js)
+
+Dados e código separados para trocar o item por personagem sem mexer na lógica:
+
+- `COLLECTIBLE_TYPES`: um tipo por item (`texture`, `value`, `groupBonus`, `color`, `spin`, `sfx` e `draw` **ou** `image`). `draw(g, size)` desenha por código (sem PNG, textura gerada em `BootScene.makeCollectibles`); `image` carrega um PNG sob a chave `texture`.
+- `CHARACTERS[x].collectible` (GameScene.js) escolhe o tipo do personagem; sem ele cai em `coin`.
+- `COLLECTIBLE_LAYOUT`: grupos `{ x, shape: 'arc'|'line', count, h? }`, iguais para todos os personagens. Alturas ficam a 95–140px do chão: o corpo em pé chega a ~68px e o pulo a ~138px, então só dá para pegar pulando.
+- Pontos entram direto no `score` (não passam pelo combo); pisar em capivara só devolve `comboPoints`. Completar um grupo soma `groupBonus`.
+- O HUD usa a textura do tipo como ícone do contador e escuta `collectedChanged`.
+
+Para um personagem coletar outra coisa: novo tipo em `COLLECTIBLE_TYPES` + `collectible: '<tipo>'` na entrada dele em `CHARACTERS`.
+
 ## Eventos GameScene → HUDScene
 
 | Evento | Payload | Quando |
@@ -122,6 +135,7 @@ BootScene → TitleScene → CharacterSelectScene → GameScene + HUDScene (para
 | `livesChanged` | `(number)` | Vida perdida |
 | `timeChanged` | `(number)` | A cada segundo |
 | `comboChanged` | `(number)` | Combo muda |
+| `collectedChanged` | `(number)` | Item coletado (total) |
 
 Emit: `this.events.emit('nome', valor)`. Escuta: `this.gameScene.events.on('nome', cb)`.
 

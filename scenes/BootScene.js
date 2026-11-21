@@ -34,8 +34,14 @@ class BootScene extends Phaser.Scene {
         this.load.image('bottle2', 'assets/bottle2.png');
         this.load.image('background2', 'assets/background2.png');
 
+        // Itens coletáveis que usam imagem (os desenhados por código são gerados abaixo)
+        Object.values(COLLECTIBLE_TYPES).forEach(t => {
+            if (t.image) this.load.image(t.texture, t.image);
+        });
+
         // Coração gerado via canvas (síncrono)
         this.makeHeart();
+        this.makeCollectibles();
     }
 
     create() {
@@ -76,6 +82,17 @@ class BootScene extends Phaser.Scene {
     }
 
     // ── Coração para HUD (canvas síncrono) ───────────────────────────────────
+    // Textura dos itens desenhados por código (sem PNG) — ver Collectibles.js
+    makeCollectibles() {
+        Object.values(COLLECTIBLE_TYPES).forEach(t => {
+            if (!t.draw) return;
+            const g = this.make.graphics({ x: 0, y: 0, add: false });
+            t.draw(g, t.size);
+            g.generateTexture(t.texture, t.size, t.size);
+            g.destroy();
+        });
+    }
+
     makeHeart() {
         const tex = this.textures.createCanvas('heart', 14, 12);
         const ctx = tex.getContext();

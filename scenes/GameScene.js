@@ -13,10 +13,11 @@ const TIME_START  = 60;     // 1 minuto em segundos
 // Personagens jogáveis: textura idle + chaves das animações criadas em BootScene.
 // A escolha vem de CharacterSelectScene (data.character) ou do registry
 // (GameOver/WinScene reiniciam direto aqui, sem passar pela seleção); padrão: André.
+// `collectible` aponta para um tipo de COLLECTIBLE_TYPES (Collectibles.js).
 const CHARACTERS = {
-    andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk' },
-    thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk' },
-    rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk' },
+    andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk', collectible: 'coin' },
+    thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk', collectible: 'coin' },
+    rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk', collectible: 'coin' },
 };
 
 // Parâmetros de spawn das capivaras
@@ -48,6 +49,8 @@ class GameScene extends Phaser.Scene {
         this.invincible  = false;
         this.combo       = 1;   // multiplicador de passagem limpa
         this.comboPoints = 0;   // pontos acumulados na sequência atual (devolvidos se pisar)
+        this.collected   = 0;   // itens coletados (mostrado no HUD)
+        this._groupLeft  = {};  // itens restantes por grupo (bônus ao completar)
         this._playerJumping = false; // diferencia pulo voluntário de empurrões/dano
     }
 
@@ -93,6 +96,9 @@ class GameScene extends Phaser.Scene {
         this.player.body.setSize(fw * 0.55, fh * 0.80);
         this.player.body.setOffset(fw * 0.22, fh * 0.10);
 
+        // ── Itens coletáveis (tipo definido pelo personagem) ──────────────────
+        this._spawnCollectibles();
+
         // ── Colisões ─────────────────────────────────────────────────────────
         this.physics.add.collider(this.player,    this.ground);
         this.physics.add.collider(this.capybaras, this.ground);
@@ -100,6 +106,8 @@ class GameScene extends Phaser.Scene {
             this.onContact, null, this);
         this.physics.add.overlap(this.player, this.bottle,
             this.onReachBottle, null, this);
+        this.physics.add.overlap(this.player, this.collectibles,
+            this._onCollect, null, this);
 
         // ── Câmera ───────────────────────────────────────────────────────────
         this.cameras.main.setBounds(0, 0, this._levelWidth, H);
@@ -195,6 +203,70 @@ class GameScene extends Phaser.Scene {
 
         // ── Caiu no buraco ────────────────────────────────────────────────────
         if (this.player.y > this.scale.height + 60) this.loseLife();
+    }
+
+    // ── Itens coletáveis (flutuam no ar — o jogador pula para pegar) ─────────
+    _spawnCollectibles() {
+        // Tipo vem do personagem; cai em 'coin' se o personagem não definir
+        const type = COLLECTIBLE_TYPES[this._charCfg.collectible] || COLLECTIBLE_TYPES.coin;
+        this._collectType = type;
+        this.collectibles = this.physics.add.group({ allowGravity: false, immovable: true });
+
+        COLLECTIBLE_LAYOUT.forEach((group, gi) => {
+            const pts = collectibleLayoutPoints(group, GROUND_Y);
+            this._groupLeft[gi] = pts.length;
+
+            pts.forEach((p, i) => {
+                const item = this.collectibles.create(p.x, p.y, type.texture)
+                    .setScale(type.scale || 1)
+                    .setDepth(8);
+                item.body.allowGravity = false;
+                item.body.immovable    = true;
+                item._group = gi;
+
+                // Defasagem por item faz a fileira "ondular" em vez de mover tudo junto
+                this.tweens.add({
+                    targets: item, y: p.y - 4,
+                    duration: 700, delay: i * 90,
+                    yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+                });
+                // O corpo do jogador é bem maior que o item, então encolher a largura
+                // no giro não atrapalha a coleta.
+                if (type.spin) {
+                    this.tweens.add({
+                        targets: item, scaleX: 0.25 * (type.scale || 1),
+                        duration: 420, delay: i * 60,
+                        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+                    });
+                }
+            });
+        });
+    }
+
+    _onCollect(player, item) {
+        if (this.dead || !item.active) return;
+        const type = this._collectType;
+        const group = item._group;
+
+        this.tweens.killTweensOf(item);
+        item.destroy();
+
+        this.collected++;
+        this.score += type.value;
+        this.events.emit('collectedChanged', this.collected);
+        this.events.emit('scoreChanged', this.score);
+        this._floatText(`+${type.value}`, item.x, item.y - 10, type.color);
+        this._sndCollectible(type);
+
+        // Grupo completo: bônus extra
+        this._groupLeft[group]--;
+        if (this._groupLeft[group] === 0 && type.groupBonus) {
+            this.score += type.groupBonus;
+            this.events.emit('scoreChanged', this.score);
+            this.time.delayedCall(180, () => {
+                this._floatText(`+${type.groupBonus}`, player.x, player.y - 56, '#44ff88', 3);
+            });
+        }
     }
 
     // ── Chão ─────────────────────────────────────────────────────────────────
@@ -484,6 +556,23 @@ class GameScene extends Phaser.Scene {
                 g.gain.setValueAtTime(0.13, ac.currentTime + d);
                 g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.22);
                 o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.25);
+            });
+        });
+    }
+
+    // SFX do item vem do catálogo (type.sfx), então cada tipo pode ter seu som
+    _sndCollectible(type) {
+        const sfx = type.sfx;
+        if (!sfx) return;
+        this._sfx(ac => {
+            sfx.notes.forEach(([f, d]) => {
+                const o = ac.createOscillator(), g = ac.createGain();
+                o.connect(g); g.connect(ac.destination);
+                o.type = sfx.wave || 'square';
+                o.frequency.setValueAtTime(f, ac.currentTime + d);
+                g.gain.setValueAtTime(sfx.gain || 0.13, ac.currentTime + d);
+                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.10);
+                o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.11);
             });
         });
     }

@@ -20,6 +20,7 @@ Escolha seu personagem, corra pelas ruas de Águas de Lindóia, desvie das capiv
 - **Objetivo:** chegue até a garrafa de água no fim da fase antes do tempo acabar (60 segundos).
 - Desvie das capivaras pulando por cima — cada passagem limpa (no ar) vale **+100 × combo**.
 - Capivaras aparecem continuamente e ficam mais rápidas com o passar do tempo.
+- Moedas flutuam no ar: **pule para pegar** (+50 cada; completar um grupo dá +100 de bônus). Pisar em capivara não tira pontos de moeda.
 - Pisar em uma capivara perde os pontos acumulados no combo atual e zera o multiplicador.
 - Encostar de lado em uma capivara custa uma vida e zera o multiplicador.
 - Nos últimos 10 segundos o cronômetro fica vermelho e um bip soa a cada segundo.
@@ -42,6 +43,7 @@ sumanzada-adventure/
 ├── index.html              # Ponto de entrada
 ├── game.js                 # Configuração do Phaser e GAME_SETTINGS
 ├── HighScore.js            # Persistência de recorde (localStorage)
+├── Collectibles.js         # Catálogo e layout dos itens coletáveis
 ├── scenes/
 │   ├── BootScene.js            # Carregamento de assets e animações
 │   ├── TitleScene.js           # Tela inicial e toggle de música
