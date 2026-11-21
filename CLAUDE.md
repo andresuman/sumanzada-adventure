@@ -39,7 +39,7 @@ sumanzada-adventure/
 ├── scenes/
 │   ├── BootScene.js            # preload() de assets + animações → TitleScene
 │   ├── TitleScene.js           # Tela inicial; toggle de música; recorde
-│   ├── CharacterSelectScene.js # Escolha de personagem (André, Thais, Rafinha)
+│   ├── CharacterSelectScene.js # Escolha de personagem (Dedé, Tatá, Rafinha)
 │   ├── GameScene.js            # Loop principal; física; capivaras; SFX; controles
 │   ├── HUDScene.js             # Overlay de pontos/vidas/tempo/combo (cena paralela)
 │   ├── GameOverScene.js        # Fim de jogo; recorde; restart

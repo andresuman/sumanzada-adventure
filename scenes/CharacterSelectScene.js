@@ -38,8 +38,8 @@ class CharacterSelectScene extends Phaser.Scene {
         // ── Personagens  ──
         // Rafinha usa escala menor no card: o carrinho é largo (335px), os outros têm ~190px.
         const CHARACTERS = [
-            { key: 'andre', name: 'ANDRÉ SUMAN',   desc: 'Torcedor do Ravens.',                   tag: '▶ SELECIONADO ◀',  idle: 'andre_idle', scale: 0.30 },
-            { key: 'thais', name: 'THAIS GORZALKA', desc: 'Química e maratonista.',                        tag: '▶ SELECIONADA ◀', idle: 'thais_idle', scale: 0.30 },
+            { key: 'andre', name: 'DEDÉ',   desc: 'Torcedor do Ravens.',                   tag: '▶ SELECIONADO ◀',  idle: 'andre_idle', scale: 0.30 },
+            { key: 'thais', name: 'TATÁ', desc: 'Química e maratonista.',                        tag: '▶ SELECIONADA ◀', idle: 'thais_idle', scale: 0.30 },
             { key: 'rafinha', name: 'RAFINHA',     desc: 'Fã de Ray Conniff.',                            tag: '▶ SELECIONADO ◀',  idle: 'rafinha_idle', scale: 0.24 },
         ];
         const CARD_W = 110, CARD_H = 180, CARD_Y = 128;

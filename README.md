@@ -28,7 +28,7 @@ Escolha seu personagem, corra pelas ruas de Águas de Lindóia, desvie das capiv
 
 ## Personagens
 
-André, Thais e Rafinha. A escolha é só visual: o jogo é o mesmo para todos.
+Dedé, Tatá e Rafinha. A escolha é só visual: o jogo é o mesmo para todos.
 
 ## Requisitos
 
