@@ -32,38 +32,35 @@ def hexrgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
-def make(palette):
+def make(palette, needle=False):
     outline, dark, base, light, spark = [hexrgb(c) for c in PALETTES[palette]]
     img = np.zeros((N, N, 4), np.uint8)
-    cx, cy, r = 11.0, 10.5, 9.4
+    cx, cy, r = 11.0, 10.5, 10.0
     inside = np.zeros((N, N), bool)
     for y in range(N):
         for x in range(N):
             inside[y, x] = ((x - cx) / r) ** 2 + ((y - cy) / r) ** 2 <= 1.0
 
-    # Fios: linhas curvas paralelas = círculos grandes concêntricos, centrados fora da bola (embaixo à esquerda),
-    # o que dá faixas diagonais que se curvam como lã enrolada. Um 2º conjunto, noutra direção, cruza só na sombra.
-    P1 = (cx - 15.0, cy + 15.0)
-    P2 = (cx + 15.0, cy + 16.0)
-    SP1, SP2 = 3.6, 4.2
+    # Uma só família de fios paralelos, bem marcados e curvos (círculos concêntricos com centro fora da bola):
+    # linhas de 1 px, a cada 3,6 px, inclinadas para baixo à direita. Sem ruído: 2 tons de fundo + linha escura.
+    P = (cx - 14.0, cy - 22.0)                      # fios escuros: arcos inclinados para baixo à direita
+    Q = (cx + 15.0, cy - 19.0)                      # fios claros: cruzam no outro sentido, por cima
+    SP, SQ = 3.9, 5.2
     for y in range(N):
         for x in range(N):
             if not inside[y, x]:
                 continue
             u, v = (x - cx) / r, (y - cy) / r
-            lit = -0.6 * u - 0.75 * v                     # luz de cima à esquerda
-            col = light if lit > 0.42 else base if lit > -0.12 else dark
-            d1 = math.hypot(x - P1[0], y - P1[1]) % SP1
-            d2 = math.hypot(x - P2[0], y - P2[1]) % SP2
-            if d1 < 0.95:                                   # fio principal (1 px de linha mais escura)
-                col = outline if col == dark else dark if col == base else base
-            elif lit < 0.0 and d2 < 0.8:                    # fios cruzando na parte de baixo/direita
-                col = outline if col == dark else dark
-            img[y, x] = col
-    # brilho no alto à esquerda
-    for (x, y) in [(6, 5), (7, 4), (5, 6), (6, 6)]:
-        if inside[y, x]:
-            img[y, x] = spark
+            lit = -0.55 * u - 0.65 * v
+            fill = light if lit > 0.28 else base if lit > -0.35 else dark
+            on_dark = (math.hypot(x - P[0], y - P[1]) % SP) < 1.0
+            on_light = (math.hypot(x - Q[0], y - Q[1]) % SQ) < 0.95
+            if on_light and lit > -0.5:                       # fio claro por cima (some na sombra funda)
+                img[y, x] = light
+            elif on_dark:
+                img[y, x] = dark if fill != dark else outline
+            else:
+                img[y, x] = fill
     # contorno
     out = img.copy()
     for y in range(N):
@@ -75,21 +72,25 @@ def make(palette):
                         out[y, x] = outline
                         break
     img = out
-    # Ponta solta: sai da base da bola, desce e faz uma curva para a direita (fio de 2 px com contorno)
-    strand = [(13, 20), (14, 21), (15, 21), (16, 21), (17, 21), (18, 20), (19, 19)]
-    body = set()
-    for (x, y) in strand:
-        body.add((x, y)); body.add((x, y + 1))
-    for (x, y) in body:
-        for dy in (-1, 0, 1):
-            for dx in (-1, 0, 1):
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < N and 0 <= ny < N and (nx, ny) not in body and img[ny, nx, 3] == 0:
-                    img[ny, nx] = outline
-    for (x, y) in body:
-        img[y, x] = base
-    for (x, y) in strand:
-        img[y, x] = light if (x + y) % 2 == 0 else base
+    # brilho
+    for (x, y) in [(6, 4), (7, 4), (5, 5), (6, 5)]:
+        if img[y, x, 3] and tuple(img[y, x][:3]) != tuple(outline[:3]) and tuple(img[y, x][:3]) != tuple(dark[:3]):
+            img[y, x] = spark
+
+    def stroke(points, color, edge=outline):
+        body = set(points)
+        for (x, y) in body:
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < N and 0 <= ny < N and (nx, ny) not in body and img[ny, nx, 3] == 0:
+                        img[ny, nx] = edge
+        for (x, y) in body:
+            img[y, x] = color
+
+    # Ponta do fio: sai pelo canto inferior direito e ondula para fora (marca registrada do novelo)
+    thread = [(17, 18), (18, 19), (19, 19), (20, 18), (21, 18), (22, 19), (22, 20), (21, 21), (20, 21)]
+    stroke(thread, light)
     return img
 
 
