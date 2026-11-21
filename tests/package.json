@@ -1,0 +1,15 @@
+{
+  "name": "sumanzada-adventure-tests",
+  "private": true,
+  "description": "Testes de desenvolvimento. O jogo em si continua sem build e sem npm.",
+  "scripts": {
+    "test": "node --test static/*.test.js",
+    "test:smoke": "node --test smoke/*.test.js",
+    "test:all": "node --test static/*.test.js smoke/*.test.js"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1",
+    "pngjs": "7.0.0",
+    "phaser": "3.60.0"
+  }
+}

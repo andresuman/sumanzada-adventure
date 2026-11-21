@@ -23,7 +23,7 @@ Deploy via GitHub Pages: `https://andresuman.github.io/sumanzada-adventure/`
 | Strings visíveis ao jogador | PT-BR |
 
 - Comentários explicam o **porquê** (decisão, limitação, workaround), não o que.
-- Sem build step. Sem transpiler. Sem npm. HTML/JS puro.
+- Sem build step. Sem transpiler. HTML/JS puro. Sem npm **no jogo**: a pasta `tests/` tem um `package.json` só de desenvolvimento (testes).
 - Todo arquivo JS novo deve ser adicionado ao `index.html` com cache-bust `?v=YYYYMMDD`.
 - Ao modificar qualquer JS, atualizar o `?v=` correspondente no `index.html`.
 
@@ -50,6 +50,9 @@ sumanzada-adventure/
 │   ├── MusicManager.js     # Motor chiptune WebAudio; window.MusicManager
 │   └── GameTheme.js        # "Tardes em Lindóia" (Zequinha de Abreu, domínio público)
 └── assets/                 # Sprites PNG (não alterar sem atualizar BootScene)
+
+tests/                      # Testes automáticos (dev only) — ver seção Testes
+.github/workflows/testes.yml # CI: roda os testes em push/PR
 ```
 
 **localStorage é compartilhado por origem.** Este jogo e qualquer outro em `andresuman.github.io` dividem o mesmo storage; por isso a chave do recorde é própria (`sumanzada-highscore`). Chaves novas devem ter prefixo `sumanzada-`.
@@ -236,6 +239,22 @@ As imagens dos personagens retratam pessoas: não são licenciadas para reuso (v
 1. **triggerGameOver() duplo:** `onContact()` sem o guard `this.dead || this.invincible`.
 2. **MusicManager memory leak:** `_scheduled` crescia sem limite; corrigido com filtro em `_scheduleLoop()`.
 3. **MusicManager.stop() travava:** usava `Math.max(now, _stopAt)`; corrigido para `n.stop(now)`.
+
+---
+
+## Testes (tests/)
+
+```bash
+cd tests && npm install
+npm test            # estáticos (node --test): assets, sprites, index.html/cache-bust, música, itens, localStorage
+npm run test:smoke  # Chromium via Playwright: fluxo de cenas, itens, game over, vitória, sem erros no console
+```
+
+- O jogo expõe `window.__game` (game.js) para os testes de navegador lerem o estado das cenas. Não remover.
+- **Sprites:** `tests/lib/sprites.js` detecta alpha parcial, buracos no rosto e faixas opacas entre contornos pretos (vão braço/corpo). Faixas ainda não revisadas da Thais/Rafinha estão em `tests/static/sprite-baseline.json`; qualquer faixa nova falha. Ao corrigir um sprite, rode `UPDATE_BASELINE=1 npm test` para encolher a linha de base.
+- **Cache-bust:** o teste falha se o `?v=` de um script no `index.html` for mais antigo que a última alteração dele (tolerância de 1 dia).
+- O Phaser vem do CDN no jogo; nos testes usa-se a cópia do npm (devDependency `phaser`) ou `PHASER_FILE=/caminho/phaser.min.js`.
+- Novo personagem/item/música: os testes de `tests/static` cobrem as referências cruzadas automaticamente; adicione um caso em `tests/smoke` se mudar o fluxo.
 
 ---
 

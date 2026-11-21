@@ -69,6 +69,10 @@ Abra `http://localhost:8000` no navegador.
 
 > **Hard refresh** se as mudanças em `.js` não aparecerem: `Cmd+Shift+R` (macOS) / `Ctrl+F5` (Windows/Linux).
 
+## Testes
+
+Antes de abrir o PR, rode `cd tests && npm install && npm test` (e `npm run test:smoke` se mexeu no fluxo do jogo). O CI roda os mesmos testes.
+
 ## Como abrir um pull request
 
 1. Faça um fork do repositório.

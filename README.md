@@ -59,6 +59,18 @@ sumanzada-adventure/
 └── assets/                 # Sprites e cenário (PNG)
 ```
 
+## Testes
+
+Os testes ficam em `tests/` e são só de desenvolvimento (o jogo em si continua sem build e sem npm).
+
+```bash
+cd tests && npm install
+npm test              # verificações estáticas: sprites, assets, index.html, música, itens (segundos)
+npm run test:smoke    # abre o jogo no Chromium e percorre o fluxo (precisa do Playwright)
+```
+
+Rodam automaticamente no GitHub Actions a cada push e pull request (`.github/workflows/testes.yml`).
+
 ## Licença
 
 [MIT](LICENSE) — apenas para o código. As imagens em `assets/` retratam pessoas e **não** são licenciadas para reuso.

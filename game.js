@@ -26,4 +26,5 @@ const config = {
     scene: [BootScene, TitleScene, CharacterSelectScene, GameScene, HUDScene, GameOverScene, WinScene]
 };
 
-new Phaser.Game(config);
+// Exposto para os testes automáticos (tests/smoke) lerem o estado das cenas
+window.__game = new Phaser.Game(config);

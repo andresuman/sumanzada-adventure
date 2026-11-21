@@ -9,3 +9,6 @@
 *.swp
 *.swo
 *~
+
+# Dependências dos testes (tests/package.json)
+node_modules/
