@@ -1,5 +1,5 @@
 window.HighScore = (function () {
-    const KEY = 'marie-highscore';
+    const KEY = 'sumanzada-highscore';
     return {
         get() {
             return parseInt(localStorage.getItem(KEY) || '0', 10);

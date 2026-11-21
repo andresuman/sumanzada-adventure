@@ -4,7 +4,6 @@ class WinScene extends Phaser.Scene {
     init(data) {
         this.finalScore  = data.score || 0;
         this.finalTime   = data.time  || 0;
-        this.finalLevel  = data.level || 2;
         this.isNewRecord = window.HighScore ? window.HighScore.check(this.finalScore) : false;
     }
 
@@ -25,7 +24,7 @@ class WinScene extends Phaser.Scene {
             strokeThickness: 6
         });
 
-        txt(W/2, 62, '100 anos depois, a água ainda cura!', {
+        txt(W/2, 62, 'Você chegou à água!', {
             fontSize: '13px',
             color: '#ffe040',
             stroke: '#000000',
@@ -67,7 +66,7 @@ class WinScene extends Phaser.Scene {
 
         btn.on('pointerover',  () => btn.setBackgroundColor('#ffffff'));
         btn.on('pointerout',   () => btn.setBackgroundColor('#ffe040'));
-        btn.on('pointerdown',  () => this.scene.start('GameScene', { level: 1 }));
+        btn.on('pointerdown',  () => this.scene.start('GameScene', {}));
 
         // Crédito
         txt(W/2, 252, 'Desenvolvido por Andre Suman  |  @andresuman', {
@@ -79,7 +78,7 @@ class WinScene extends Phaser.Scene {
 
         // Delay evita restart acidental por tecla ainda pressionada no fim do jogo
         this.time.delayedCall(1200, () => {
-            this.input.keyboard.once('keydown', () => this.scene.start('GameScene', { level: 1 }));
+            this.input.keyboard.once('keydown', () => this.scene.start('GameScene', {}));
         });
 
         this.tweens.add({ targets: btn, alpha: 0.5, duration: 550, yoyo: true, repeat: -1 });

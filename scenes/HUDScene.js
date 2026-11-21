@@ -3,7 +3,6 @@ class HUDScene extends Phaser.Scene {
 
     init(data) {
         this.gameScene = data.gameScene;
-        this.level     = data.level || 1;
     }
 
     create() {

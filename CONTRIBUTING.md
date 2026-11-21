@@ -1,6 +1,6 @@
 # Guia de Contribuição
 
-Obrigado pelo interesse em contribuir com **A Aventura de Marie Curie**!
+Obrigado pelo interesse em contribuir com **Sumanzada Adventure**!
 
 ## Convenções de código
 

@@ -2,14 +2,7 @@ class BootScene extends Phaser.Scene {
     constructor() { super({ key: 'BootScene' }); }
 
     preload() {
-        // Personagem
-        this.load.image('marie_idle',  'assets/marie_idle.png');
-        this.load.image('marie_walk1', 'assets/marie_walk1.png');
-        this.load.image('marie_walk2', 'assets/marie_walk2.png');
-        this.load.image('marie_walk3', 'assets/marie_walk3.png');
-        this.load.image('marie_walk4', 'assets/marie_walk4.png');
-
-        // Personagens jogáveis da família (mesmo padrão da Marie: idle + 4 frames)
+        // Personagens jogáveis da família (idle + 4 frames de caminhada)
         this.load.image('andre_idle',  'assets/andre_idle.png');
         this.load.image('andre_walk1', 'assets/andre_walk1.png');
         this.load.image('andre_walk2', 'assets/andre_walk2.png');
@@ -37,32 +30,16 @@ class BootScene extends Phaser.Scene {
         this.load.image('capy_flat2', 'assets/capy_flat2.png');
 
         // Cenário e itens
-        this.load.image('ground',  'assets/ground.png');
         this.load.image('ground2', 'assets/ground2.png');
-        this.load.image('bottle',  'assets/bottle.png');
         this.load.image('bottle2', 'assets/bottle2.png');
-        this.load.image('questionBlock', 'assets/question-block.png');
-        this.load.image('background',  'assets/background.png');
         this.load.image('background2', 'assets/background2.png');
-
-        // Banco do desafio de perguntas educativo
-        this.load.json('quiz', 'data/quiz.json');
 
         // Coração gerado via canvas (síncrono)
         this.makeHeart();
     }
 
     create() {
-        // Animações da Marie
-        this.anims.create({ key: 'marie-idle',
-            frames: [{ key:'marie_idle' }], frameRate:1, repeat:-1 });
-        this.anims.create({ key: 'marie-walk',
-            frames: [
-                { key:'marie_walk1' }, { key:'marie_walk2' },
-                { key:'marie_walk3' }, { key:'marie_walk4'  }
-            ], frameRate:8, repeat:-1 });
-
-        // Animações do André (mesmo padrão da Marie)
+        // Animações do André 
         this.anims.create({ key: 'andre-idle',
             frames: [{ key:'andre_idle' }], frameRate:1, repeat:-1 });
         this.anims.create({ key: 'andre-walk',
@@ -71,7 +48,7 @@ class BootScene extends Phaser.Scene {
                 { key:'andre_walk3' }, { key:'andre_walk4'  }
             ], frameRate:8, repeat:-1 });
 
-        // Animações da Thais (mesmo padrão da Marie)
+        // Animações da Thais 
         this.anims.create({ key: 'thais-idle',
             frames: [{ key:'thais_idle' }], frameRate:1, repeat:-1 });
         this.anims.create({ key: 'thais-walk',
@@ -80,7 +57,7 @@ class BootScene extends Phaser.Scene {
                 { key:'thais_walk3' }, { key:'thais_walk4'  }
             ], frameRate:8, repeat:-1 });
 
-        // Animações do Rafinha (mesmo padrão da Marie; o "andar" é o carrinho rolando)
+        // Animações do Rafinha (o "andar" é o carrinho rolando)
         this.anims.create({ key: 'rafinha-idle',
             frames: [{ key:'rafinha_idle' }], frameRate:1, repeat:-1 });
         this.anims.create({ key: 'rafinha-walk',

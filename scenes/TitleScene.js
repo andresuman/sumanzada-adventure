@@ -27,7 +27,7 @@ class TitleScene extends Phaser.Scene {
         const H = this.scale.height;
 
         // Overlay escuro sobre o background — garante contraste suficiente para os textos da tela inicial
-        this.add.image(0, 0, 'background').setOrigin(0, 0);
+        this.add.image(0, 0, 'background2').setOrigin(0, 0);
         this.add.rectangle(W/2, H/2, W, H, 0x000a1a, 0.82);
 
         const txt = (x, y, str, style) =>
@@ -35,14 +35,14 @@ class TitleScene extends Phaser.Scene {
                 .setOrigin(0.5);
 
         // Título
-        txt(W/2, 28, 'A AVENTURA DE MARIE CURIE', {
+        txt(W/2, 28, 'SUMANZADA ADVENTURE', {
             fontSize: '26px',
             color: '#ffe040',
             stroke: '#000000',
             strokeThickness: 6
         });
 
-        txt(W/2, 57, '100 anos da visita de Marie Curie  •  1926 – 2026', {
+        txt(W/2, 57, 'Águas de Lindóia', {
             fontSize: '10px',
             color: '#66ccff',
             stroke: '#000000',

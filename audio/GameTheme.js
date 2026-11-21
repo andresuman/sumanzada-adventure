@@ -1,4 +1,4 @@
-// Tema original composto para "Marie Adventure".
+// Tema original composto para "Sumanzada Adventure".
 // Valsa em Fá maior, 3/4, 80 BPM — 24 compassos (A · A' · B).
 // Caráter: nostalgia de salão, à moda das valsas brasileiras dos anos 1920.
 // Obra inédita; qualquer semelhança com composições existentes é mera coincidência

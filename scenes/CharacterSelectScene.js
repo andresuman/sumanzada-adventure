@@ -9,7 +9,7 @@ class CharacterSelectScene extends Phaser.Scene {
         const W = this.scale.width;
 
         // Fundo + overlay escuro (mesmo padrão da TitleScene)
-        this.add.image(0, 0, 'background').setOrigin(0, 0);
+        this.add.image(0, 0, 'background2').setOrigin(0, 0);
         this.add.rectangle(W / 2, this.scale.height / 2, W, this.scale.height, 0x000a1a, 0.82);
 
         const txt = (x, y, str, style) =>
@@ -35,16 +35,15 @@ class CharacterSelectScene extends Phaser.Scene {
         back.on('pointerout',  () => back.setColor('#cccccc'));
         back.on('pointerdown', () => this.scene.start('TitleScene'));
 
-        // ── Personagens (mesmo conteúdo do protótipo character-select.html) ──
+        // ── Personagens  ──
         // Rafinha usa escala menor no card: o carrinho é largo (335px), os outros têm ~190px.
         const CHARACTERS = [
-            { key: 'marie', name: 'MARIE CURIE',   desc: 'Duas vezes Prêmio Nobel.',   tag: '▶ SELECIONADA ◀', idle: 'marie_idle', scale: 0.30 },
             { key: 'andre', name: 'ANDRÉ SUMAN',   desc: 'Torcedor do Baltimore Ravens.',                   tag: '▶ SELECIONADO ◀',  idle: 'andre_idle', scale: 0.30 },
             { key: 'thais', name: 'THAIS GORZALKA', desc: 'Química e maratonista.',                        tag: '▶ SELECIONADA ◀', idle: 'thais_idle', scale: 0.30 },
             { key: 'rafinha', name: 'RAFINHA',     desc: 'Fã de Ray Conniff.',                            tag: '▶ SELECIONADO ◀',  idle: 'rafinha_idle', scale: 0.24 },
         ];
         const CARD_W = 110, CARD_H = 180, CARD_Y = 128;
-        const CARD_XS = [60, 178, 296, 414];
+        const CARD_XS = [120, 240, 360];
 
         this._cards = [];
         CHARACTERS.forEach((ch, i) => {
@@ -110,12 +109,12 @@ class CharacterSelectScene extends Phaser.Scene {
         this.tweens.add({ targets: btn, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
 
         // Teclado: setas trocam o personagem, Enter começa, Esc volta
-        this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + 3) % 4));
-        this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % 4));
+        this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + 2) % 3));
+        this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % 3));
         this.input.keyboard.on('keydown-ENTER', () => this._startGame());
         this.input.keyboard.on('keydown-ESC',   () => this.scene.start('TitleScene'));
 
-        // Marie pré-selecionada (igual ao protótipo)
+        // Primeiro personagem pré-selecionado
         this._select(0);
     }
 
@@ -135,6 +134,6 @@ class CharacterSelectScene extends Phaser.Scene {
         // Salva no registry: GameOver/WinScene reiniciam direto na GameScene,
         // então a escolha precisa sobreviver sem passar por esta cena.
         this.registry.set('character', key);
-        this.scene.start('GameScene', { level: 1, character: key });
+        this.scene.start('GameScene', { character: key });
     }
 }

@@ -1,28 +1,23 @@
 const GROUND_Y    = 248;
 const TILE_W      = 64;
 const TILE_H      = 48;
-const MARIE_SCALE = 0.28;
+const PLAYER_SCALE = 0.28;
 const CAPY_SCALE  = 0.22;
-const MARIE_SPEED = 140;
+const PLAYER_SPEED = 140;
 const JUMP_VY     = -440;
 const LIVES_START = 5;
-const CAPY_SPEED  = 60;
-const LEVEL_WIDTH = 1946;   // largura exata do background.png (fase 1)
+const CAPY_SPEED  = 85;     // velocidade base das capivaras (px/s)
+const LEVEL_WIDTH = 2972;   // largura exata do background2.png
 const TIME_START  = 60;     // 1 minuto em segundos
 
 // Personagens jogáveis: textura idle + chaves das animações criadas em BootScene.
 // A escolha vem de CharacterSelectScene (data.character) ou do registry
-// (GameOver/WinScene reiniciam direto aqui, sem passar pela seleção); padrão: Marie.
+// (GameOver/WinScene reiniciam direto aqui, sem passar pela seleção); padrão: André.
 const CHARACTERS = {
-    marie: { idle: 'marie_idle', idleAnim: 'marie-idle', walkAnim: 'marie-walk' },
     andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk' },
     thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk' },
     rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk' },
 };
-
-// Parâmetros específicos da fase 2 (mais difícil: capivaras mais rápidas, fase mais longa)
-const LEVEL_WIDTH_2 = 2972; // largura exata do background2.png
-const CAPY_SPEED_2  = 85;   // capivaras 40% mais rápidas na fase 2
 
 // Parâmetros de spawn das capivaras
 const SPAWN_DELAY_MAX    = 3500; // intervalo inicial entre spawns (ms)
@@ -30,10 +25,10 @@ const SPAWN_DELAY_MIN    = 1500; // intervalo mínimo ao fim da fase (ms)
 const SPAWN_DELAY_JITTER = 400;  // variação aleatória ±400ms no intervalo
 const SPAWN_SPEED_RAMP   = 0.8;  // fator de aceleração máxima (80% acima do base)
 
-// Tolerâncias de colisão e timings de transição
+// Tolerâncias de colisão e timings
 const STOMP_TOLERANCE     = 14;  // px de tolerância para detectar pisada no topo da capivara
 const GAMEOVER_DELAY      = 700; // ms de espera antes de exibir GameOverScene
-const PHASE_TRANS_DELAY   = 600; // ms de espera antes de transição de fase
+const PHASE_TRANS_DELAY   = 600; // ms de espera antes da tela de vitória
 const INVINCIBLE_REPEAT   = 10;  // repetições do piscar após levar dano
 const INVINCIBLE_DURATION = 90;  // duração de cada piscar de invencibilidade (ms)
 
@@ -41,32 +36,28 @@ class GameScene extends Phaser.Scene {
     constructor() { super({ key: 'GameScene' }); }
 
     init(data) {
-        this.level       = data && data.level ? data.level : 1;
-        this.score       = data && data.score ? data.score : 0;  // carrega pontuação da fase anterior
-        this.lives       = data && data.lives ? data.lives : LIVES_START;  // carrega vidas da fase anterior
+        this.score       = data && data.score ? data.score : 0;
+        this.lives       = data && data.lives ? data.lives : LIVES_START;
         // Personagem escolhido na CharacterSelectScene; o registry cobre o restart
-        // de GameOver/WinScene e a transição de fase, que não passam character.
-        this.character   = (data && data.character) || this.registry.get('character') || 'marie';
-        if (!CHARACTERS[this.character]) this.character = 'marie';
+        // de GameOver/WinScene, que não passam character.
+        this.character   = (data && data.character) || this.registry.get('character') || 'andre';
+        if (!CHARACTERS[this.character]) this.character = 'andre';
         this._charCfg    = CHARACTERS[this.character];
         this.gameTime    = TIME_START;
         this.dead        = false;
         this.invincible  = false;
         this.combo       = 1;   // multiplicador de passagem limpa
         this.comboPoints = 0;   // pontos acumulados na sequência atual (devolvidos se pisar)
-        this._quizActive = false; // impede abrir dois quizzes simultâneos
-        this._quizQueue  = [];    // fila de perguntas sorteadas para a fase atual
         this._playerJumping = false; // diferencia pulo voluntário de empurrões/dano
     }
 
     create() {
         const H = this.scale.height;
 
-        // Parâmetros que variam entre fases
-        this._levelWidth = this.level === 2 ? LEVEL_WIDTH_2 : LEVEL_WIDTH;
-        this._capySpeed  = this.level === 2 ? CAPY_SPEED_2  : CAPY_SPEED;
-        this._bgKey      = this.level === 2 ? 'background2' : 'background';
-        this._groundKey  = this.level === 2 ? 'ground2'     : 'ground';
+        this._levelWidth = LEVEL_WIDTH;
+        this._capySpeed  = CAPY_SPEED;
+        this._bgKey      = 'background2';
+        this._groundKey  = 'ground2';
 
         // ── Fundo (imagem estática de largura fixa) ──────────────────────────
         this.add.image(0, 0, this._bgKey).setOrigin(0, 0).setDepth(0);
@@ -79,10 +70,9 @@ class GameScene extends Phaser.Scene {
         this.capybaras = this.physics.add.group();
 
         // ── Garrafa (objetivo final) ──────────────────────────────────────────
-        // Fase 1: garrafa antiga (316×718); Fase 2: garrafa Lindoya moderna (105×240)
-        const bottleKey   = this.level === 2 ? 'bottle2' : 'bottle';
-        const bottleH     = this.level === 2 ? 240 : 718;
-        const bottleScale = this.level === 2 ? 0.48 : 0.15;
+        const bottleKey   = 'bottle2';
+        const bottleH     = 240;
+        const bottleScale = 0.48;
         const bottleX     = this._levelWidth - 80;
         const bottleY     = GROUND_Y - (bottleH * bottleScale) / 2 + 6;
         this.bottle = this.physics.add.staticSprite(bottleX, bottleY, bottleKey)
@@ -90,37 +80,30 @@ class GameScene extends Phaser.Scene {
             .setDepth(10);
         this.bottle.refreshBody();
 
-        // ── Personagem escolhido (this.marie é o jogador, seja qual for o personagem) ──
-        this.marie = this.physics.add.sprite(80, GROUND_Y - 50, this._charCfg.idle)
-            .setScale(MARIE_SCALE)
+        // ── Personagem escolhido (this.player é o jogador, seja qual for o personagem) ──
+        this.player = this.physics.add.sprite(80, GROUND_Y - 50, this._charCfg.idle)
+            .setScale(PLAYER_SCALE)
             .setCollideWorldBounds(false)
             .setDepth(10);
 
-        // Hitbox proporcional ao sprite do personagem — para a Marie (192×302)
+        // Hitbox proporcional ao sprite do personagem — 
         // os valores são os mesmos de antes; André e Thais são mais estreitos.
-        const fw = this.marie.frame.width;
-        const fh = this.marie.frame.height;
-        this.marie.body.setSize(fw * 0.55, fh * 0.80);
-        this.marie.body.setOffset(fw * 0.22, fh * 0.10);
-
-        // ── Blocos coletáveis do quiz ─────────────────────────────────────────
-        this._sortearQuiz();
-        this.collectibles = this.physics.add.group();
-        this._spawnCollectibles();
+        const fw = this.player.frame.width;
+        const fh = this.player.frame.height;
+        this.player.body.setSize(fw * 0.55, fh * 0.80);
+        this.player.body.setOffset(fw * 0.22, fh * 0.10);
 
         // ── Colisões ─────────────────────────────────────────────────────────
-        this.physics.add.collider(this.marie,    this.ground);
+        this.physics.add.collider(this.player,    this.ground);
         this.physics.add.collider(this.capybaras, this.ground);
-        this.physics.add.overlap(this.marie, this.capybaras,
+        this.physics.add.overlap(this.player, this.capybaras,
             this.onContact, null, this);
-        this.physics.add.overlap(this.marie, this.bottle,
+        this.physics.add.overlap(this.player, this.bottle,
             this.onReachBottle, null, this);
-        this.physics.add.overlap(this.marie, this.collectibles,
-            this._onCollect, null, this);
 
         // ── Câmera ───────────────────────────────────────────────────────────
         this.cameras.main.setBounds(0, 0, this._levelWidth, H);
-        this.cameras.main.startFollow(this.marie, true, 0.1, 0);
+        this.cameras.main.startFollow(this.player, true, 0.1, 0);
 
         // ── Controles ────────────────────────────────────────────────────────
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -147,7 +130,7 @@ class GameScene extends Phaser.Scene {
             loop: true
         });
 
-        this.scene.launch('HUDScene', { gameScene: this, level: this.level });
+        this.scene.launch('HUDScene', { gameScene: this });
         this._showPhaseAnnouncement();
         this._scheduleNextCapy();
     }
@@ -155,7 +138,7 @@ class GameScene extends Phaser.Scene {
     update() {
         if (this.dead) return;
 
-        const onGround = this.marie.body.blocked.down || this.marie.body.touching.down;
+        const onGround = this.player.body.blocked.down || this.player.body.touching.down;
         const cam      = this.cameras.main.scrollX;
 
         // ── Movimento ────────────────────────────────────────────────────────
@@ -163,35 +146,35 @@ class GameScene extends Phaser.Scene {
         const goLeft  = this.cursors.left.isDown  || this.wasd.A.isDown || this.btnLeft;
         const goRight = this.cursors.right.isDown || this.wasd.D.isDown || this.btnRight;
 
-        if (goLeft)       { vx = -MARIE_SPEED; this.marie.setFlipX(true);  }
-        else if (goRight) { vx =  MARIE_SPEED; this.marie.setFlipX(false); }
+        if (goLeft)       { vx = -PLAYER_SPEED; this.player.setFlipX(true);  }
+        else if (goRight) { vx =  PLAYER_SPEED; this.player.setFlipX(false); }
 
         // Limites horizontais: não sai da fase nem fica atrás da câmera
-        if (this.marie.x < cam + 16)                  this.marie.x = cam + 16;
-        if (this.marie.x > this._levelWidth - 20) this.marie.x = this._levelWidth - 20;
-        this.marie.setVelocityX(vx);
+        if (this.player.x < cam + 16)                  this.player.x = cam + 16;
+        if (this.player.x > this._levelWidth - 20) this.player.x = this._levelWidth - 20;
+        this.player.setVelocityX(vx);
 
         // ── Pulo ──────────────────────────────────────────────────────────────
         const jumpPressed = this.cursors.up.isDown || this.cursors.space.isDown ||
                             this.wasd.W.isDown || this.btnJump;
         if (jumpPressed && onGround) {
             this._playerJumping = true;
-            this.marie.setVelocityY(JUMP_VY);
+            this.player.setVelocityY(JUMP_VY);
             this.sndJump();
         }
 
         // ── Animação ─────────────────────────────────────────────────────────
-        if (vx !== 0) this.marie.anims.play(this._charCfg.walkAnim, true);
-        else          this.marie.anims.play(this._charCfg.idleAnim, true);
+        if (vx !== 0) this.player.anims.play(this._charCfg.walkAnim, true);
+        else          this.player.anims.play(this._charCfg.idleAnim, true);
 
         // ── Detectar passagem limpa + limpar capivaras fora da tela ──────────
-        const marieOnGround = this.marie.body.blocked.down || this.marie.body.touching.down;
-        if (marieOnGround && this.marie.body.velocity.y >= 0) this._playerJumping = false;
+        const playerOnGround = this.player.body.blocked.down || this.player.body.touching.down;
+        if (playerOnGround && this.player.body.velocity.y >= 0) this._playerJumping = false;
         this.capybaras.getChildren().forEach(capy => {
-            // Momento em que a capivara cruza Marie: decide se pontua ou não
-            if (!capy._scored && !capy._stomped && !capy._missed && capy.x < this.marie.x - 40) {
-                if (!marieOnGround) {
-                    // Marie estava no ar — passagem limpa válida
+            // Momento em que a capivara cruza o jogador: decide se pontua ou não
+            if (!capy._scored && !capy._stomped && !capy._missed && capy.x < this.player.x - 40) {
+                if (!playerOnGround) {
+                    // O jogador estava no ar — passagem limpa válida
                     capy._scored = true;
                     const usedCombo = this.combo;
                     const pts = 100 * usedCombo;
@@ -201,9 +184,9 @@ class GameScene extends Phaser.Scene {
                     this.combo++;
                     this.events.emit('scoreChanged', this.score);
                     this.events.emit('comboChanged',  this.combo);
-                    this._floatText(`+${pts}`, this.marie.x, this.marie.y - 40, '#44ff88', usedCombo);
+                    this._floatText(`+${pts}`, this.player.x, this.player.y - 40, '#44ff88', usedCombo);
                 } else {
-                    // Marie estava no chão — sem pontos, não tenta novamente
+                    // O jogador estava no chão — sem pontos, não tenta novamente
                     capy._missed = true;
                 }
             }
@@ -211,102 +194,7 @@ class GameScene extends Phaser.Scene {
         });
 
         // ── Caiu no buraco ────────────────────────────────────────────────────
-        if (this.marie.y > this.scale.height + 60) this.loseLife();
-    }
-
-    // ── Sorteio de 3 perguntas aleatórias do banco da fase atual ─────────────
-    _sortearQuiz() {
-        const dados = this.cache.json.get('quiz');
-        if (!dados) { this._quizQueue = []; return; }
-        const banco = dados[this.level === 1 ? 'fase1' : 'fase2'] || [];
-        this._quizQueue = Phaser.Utils.Array.Shuffle([...banco]).slice(0, 3);
-    }
-
-    // ── Blocos coletáveis (flutuam no ar — jogador pula para pegar) ──────────
-    _spawnCollectibles() {
-        if (this._quizQueue.length === 0) return;
-
-        const posX = this.level === 1
-            ? [380, 970, 1560]
-            : [560, 1480, 2600];
-
-        const ITEM_Y = 110;
-
-        posX.forEach((pX, i) => {
-            if (i >= this._quizQueue.length) return;
-
-            const item = this.collectibles.create(pX, ITEM_Y, 'questionBlock')
-                .setDepth(8)
-                .setScale(0.28);
-            item.body.allowGravity = false;
-            item.body.immovable    = true;
-
-            this.tweens.add({
-                targets: item, y: ITEM_Y - 6,
-                duration: 820 + i * 130,
-                yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-            });
-
-            this.tweens.add({
-                targets: item, alpha: 0.75,
-                duration: 510 + i * 90,
-                yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-            });
-        });
-    }
-
-    // ── Coleta do bloco — pausa jogo e abre o quiz como overlay ──────────────
-    _onCollect(marie, item) {
-        if (this._quizActive || this.dead) return;
-        // Só abre quiz quando Marie alcança o bloco durante um pulo iniciado pelo jogador.
-        // Isso evita ativação acidental após dano/empurrão de capivara ou reposicionamento.
-        if (this.invincible || !this._playerJumping) return;
-        if (this._quizQueue.length === 0) return;
-
-        this._playerJumping = false;
-        this._quizActive = true;
-        this._quizReturnPosition = {
-            x: Phaser.Math.Clamp(item.x, 32, this._levelWidth - 32),
-            y: GROUND_Y - 80,
-        };
-        const pergunta = this._quizQueue.shift(); // consome a próxima pergunta da fila
-
-        item.destroy();
-        this.sndCollect();
-
-        // Escuta o resultado uma só vez; limpar capivaras evita colisão surpresa ao retornar
-        this.events.once('quiz-resolvido', ({ acertou }) => {
-            this._quizActive = false;
-            this.capybaras.clear(true, true);
-            this._returnMarieFromQuiz();
-            if (acertou) {
-                this.score += 500;
-                this.events.emit('scoreChanged', this.score);
-                this._floatText('+500', this.marie.x, this.marie.y - 40, '#44ff88');
-            }
-        });
-
-        // Pausa a GameScene e lança o quiz como cena overlay
-        this.scene.pause();
-        this.scene.launch('QuizScene', { ...pergunta, gameScene: this });
-    }
-
-    // ── Retorno do quiz: evita retomar no meio do pulo congelado ─────────────
-    _returnMarieFromQuiz() {
-        if (!this._quizReturnPosition) return;
-
-        const x = Phaser.Math.Clamp(this._quizReturnPosition.x, 32, this._levelWidth - 32);
-        const y = this._quizReturnPosition.y;
-
-        this._playerJumping = false;
-        this.marie.setPosition(x, y);
-
-        if (this.marie.body && this.marie.body.reset) {
-            this.marie.body.reset(x, y);
-        }
-
-        this.marie.setVelocity(0, 0);
-        this._quizReturnPosition = null;
+        if (this.player.y > this.scale.height + 60) this.loseLife();
     }
 
     // ── Chão ─────────────────────────────────────────────────────────────────
@@ -359,14 +247,14 @@ class GameScene extends Phaser.Scene {
         capy.anims.play('capy-walk', true);
     }
 
-    // ── Colisão Marie × Capivara ──────────────────────────────────────────────
-    onContact(marie, capy) {
+    // ── Colisão jogador × capivara ──────────────────────────────────────────────
+    onContact(player, capy) {
         // Guard: Phaser pode acionar overlap mesmo após game over — evita triggerGameOver() duplo.
         if (this.dead || this.invincible) return;
-        const marieFeet = marie.body.bottom;
+        const playerFeet = player.body.bottom;
         const capyTop   = capy.body.top;
 
-        if (marieFeet <= capyTop + STOMP_TOLERANCE && marie.body.velocity.y > 0) {
+        if (playerFeet <= capyTop + STOMP_TOLERANCE && player.body.velocity.y > 0) {
             // Pisou na capivara — penalidade: perde os pontos do combo atual
             capy._stomped = true;
             const visualBottom = capy.y + capy.displayHeight / 2;
@@ -379,13 +267,13 @@ class GameScene extends Phaser.Scene {
 
             if (this.comboPoints > 0) {
                 this.score = Math.max(0, this.score - this.comboPoints);
-                this._floatText(`-${this.comboPoints}`, marie.x, marie.y - 40, '#ff4444');
+                this._floatText(`-${this.comboPoints}`, player.x, player.y - 40, '#ff4444');
             }
             this.combo       = 1;
             this.comboPoints = 0;
             this.events.emit('scoreChanged', this.score);
             this.events.emit('comboChanged',  this.combo);
-            marie.setVelocityY(JUMP_VY * 0.5);
+            player.setVelocityY(JUMP_VY * 0.5);
             this.time.delayedCall(500, () => capy.destroy());
         } else {
             this.loseLife();
@@ -393,27 +281,17 @@ class GameScene extends Phaser.Scene {
     }
 
     // ── Chegou na garrafa! ────────────────────────────────────────────────────
-    onReachBottle(marie, bottle) {
+    onReachBottle(player, bottle) {
         if (this.dead) return;
         this.dead = true;
         bottle.destroy();
-        marie.setVelocityX(0);
+        player.setVelocityX(0);
 
-        if (this.level === 1) {
-            // Transição de fase — fanfarra curta
-            this.sndWin();
-            this.time.delayedCall(PHASE_TRANS_DELAY, () => {
-                this.scene.stop('HUDScene');
-                this.scene.start('GameScene', { level: 2, score: this.score, lives: this.lives, character: this.character });
-            });
-        } else {
-            // Fase 2 concluída — fanfarra de vitória final
-            this.sndVictory();
-            this.time.delayedCall(PHASE_TRANS_DELAY, () => {
-                this.scene.stop('HUDScene');
-                this.scene.start('WinScene', { score: this.score, time: this.gameTime, level: this.level });
-            });
-        }
+        this.sndVictory();
+        this.time.delayedCall(PHASE_TRANS_DELAY, () => {
+            this.scene.stop('HUDScene');
+            this.scene.start('WinScene', { score: this.score, time: this.gameTime });
+        });
     }
 
     // ── Perder vida ───────────────────────────────────────────────────────────
@@ -431,21 +309,21 @@ class GameScene extends Phaser.Scene {
 
         this.invincible = true;
         this.tweens.add({
-            targets: this.marie, alpha: 0.25, duration: INVINCIBLE_DURATION,
+            targets: this.player, alpha: 0.25, duration: INVINCIBLE_DURATION,
             yoyo: true, repeat: INVINCIBLE_REPEAT,
-            onComplete: () => { this.marie.setAlpha(1); this.invincible = false; }
+            onComplete: () => { this.player.setAlpha(1); this.invincible = false; }
         });
 
         const cam = this.cameras.main.scrollX;
         this._playerJumping = false;
-        this.marie.setPosition(cam + 80, GROUND_Y - 80);
-        this.marie.setVelocity(0, 0);
+        this.player.setPosition(cam + 80, GROUND_Y - 80);
+        this.player.setVelocity(0, 0);
     }
 
     // ── Game Over ─────────────────────────────────────────────────────────────
     triggerGameOver() {
         this.dead = true;
-        this.marie.setVelocity(0, 0);
+        this.player.setVelocity(0, 0);
         this.sndGameOver();
         this.time.delayedCall(GAMEOVER_DELAY, () => {
             this.scene.stop('HUDScene');
@@ -498,27 +376,20 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // ── Anúncio de fase no início ─────────────────────────────────────────────
+    // ── Anúncio da cidade no início ───────────────────────────────────────────
     _showPhaseAnnouncement() {
-        const W   = this.scale.width;
-        const H   = this.scale.height;
-        const cidade = this.level === 2 ? 'Águas de Lindóia  ·  2026'
-                                        : 'Thermas de Lindoya  ·  1926';
+        const W = this.scale.width;
+        const H = this.scale.height;
 
-        const title = this.add.text(W / 2, H / 2 - 16, `FASE ${this.level}`, {
-            fontFamily: 'monospace', fontSize: '36px',
+        const title = this.add.text(W / 2, H / 2, 'ÁGUAS DE LINDÓIA', {
+            fontFamily: 'monospace', fontSize: '28px',
             color: '#ffe040', stroke: '#000000', strokeThickness: 8,
         }).setOrigin(0.5).setDepth(30).setScrollFactor(0);
 
-        const sub = this.add.text(W / 2, H / 2 + 18, cidade, {
-            fontFamily: 'monospace', fontSize: '13px',
-            color: '#66ccff', stroke: '#000000', strokeThickness: 4,
-        }).setOrigin(0.5).setDepth(30).setScrollFactor(0);
-
         this.tweens.add({
-            targets: [title, sub], alpha: 0,
+            targets: title, alpha: 0,
             delay: 2800, duration: 700,
-            onComplete: () => { title.destroy(); sub.destroy(); },
+            onComplete: () => title.destroy(),
         });
     }
 
@@ -556,20 +427,6 @@ class GameScene extends Phaser.Scene {
             g.gain.setValueAtTime(0.22, ac.currentTime);
             g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.15);
             o.start(ac.currentTime); o.stop(ac.currentTime + 0.15);
-        });
-    }
-
-    sndWin() {
-        this._sfx(ac => {
-            [[523, 0], [659, 0.11], [784, 0.22], [1047, 0.34]].forEach(([f, d]) => {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
-                o.type = 'square';
-                o.frequency.value = f;
-                g.gain.setValueAtTime(0.15, ac.currentTime + d);
-                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.18);
-                o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.20);
-            });
         });
     }
 
@@ -617,7 +474,7 @@ class GameScene extends Phaser.Scene {
     }
 
     sndVictory() {
-        // Fanfarra ascendente de cinco notas — distinta do sndWin() de transição de fase
+        // Fanfarra ascendente de cinco notas
         this._sfx(ac => {
             [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.38], [1319, 0.55]].forEach(([f, d]) => {
                 const o = ac.createOscillator(), g = ac.createGain();
@@ -627,21 +484,6 @@ class GameScene extends Phaser.Scene {
                 g.gain.setValueAtTime(0.13, ac.currentTime + d);
                 g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.22);
                 o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.25);
-            });
-        });
-    }
-
-    sndCollect() {
-        // Arpejo curto ascendente — "item coletado"
-        this._sfx(ac => {
-            [[784, 0], [988, 0.07], [1319, 0.14]].forEach(([f, d]) => {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
-                o.type = 'square';
-                o.frequency.setValueAtTime(f, ac.currentTime + d);
-                g.gain.setValueAtTime(0.13, ac.currentTime + d);
-                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.10);
-                o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.11);
             });
         });
     }
