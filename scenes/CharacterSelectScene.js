@@ -38,41 +38,50 @@ class CharacterSelectScene extends Phaser.Scene {
         const cards = CHARACTERS.map(c => ({
             key: c.key,
             name: c.name,
-            tag: `▶ SELECIONAD${c.feminine ? 'A' : 'O'} ◀`,
+            tag: `SELECIONAD${c.feminine ? 'A' : 'O'}`,
             idle: characterTextures(c.key).idle,
         }));
         const n = cards.length;
         this._count = n;
 
-        // Layout (480×270): título no alto, cards no meio e botão embaixo, com folgas parecidas (~14 px).
-        // A largura do card encolhe conforme a quantidade de personagens, até no máximo 108 px.
-        const MARGIN = 12, GAP = 6, CARD_MAX_W = 108;
-        const CARD_W = Math.min(CARD_MAX_W, Math.floor((W - 2 * MARGIN - (n - 1) * GAP) / n));
-        const CARD_H = 162, CARD_TOP = 46;
-        const CARD_Y = CARD_TOP + CARD_H / 2;                 // centro do card
-        const SPRITE_MAX_W = CARD_W - 12, SPRITE_MAX_H = 112;
-        const SPRITE_FEET_Y = CARD_TOP + 10 + SPRITE_MAX_H;   // pés alinhados na mesma linha em todos
-        const NAME_Y = SPRITE_FEET_Y + 14, TAG_Y = NAME_Y + 15;
-        const TAG_SIZE = CARD_W < 100 ? '8px' : '9px';        // "▶ SELECIONADA ◀" precisa caber no card
-        // Cards distribuídos e centralizados na largura, qualquer que seja a quantidade
-        const CARD_XS = cards.map((_, i) => W / 2 + (i - (n - 1) / 2) * (CARD_W + GAP));
+        // Layout (480×270): título no alto, grade de cards no meio e botão embaixo.
+        // Os cards ficam em 2 linhas (metade em cada; a última linha é centralizada) e cada um tem o
+        // sprite à esquerda e nome + rótulo à direita.
+        const COLS = Math.ceil(n / 2);
+        this._cols = COLS;
+        const ROWS = Math.ceil(n / COLS);
+        const MARGIN = 12, GAP = 6;
+        const CARD_W = Math.min(148, Math.floor((W - 2 * MARGIN - (COLS - 1) * GAP) / COLS));
+        const CARD_H = 80, GRID_TOP = 44;
+        const SPRITE_AREA_W = 68, PAD = 6;
+        const SPRITE_MAX_W = SPRITE_AREA_W, SPRITE_MAX_H = CARD_H - 2 * PAD;
+        const SPRITE_X = -CARD_W / 2 + PAD + SPRITE_AREA_W / 2;           // centro do sprite, relativo ao card
+        const TEXT_X = (-CARD_W / 2 + PAD + SPRITE_AREA_W + CARD_W / 2 - PAD) / 2;   // centro do espaço que sobra à direita
+        const cardPos = (i) => {
+            const row = Math.floor(i / COLS), inRow = row === ROWS - 1 ? n - row * COLS : COLS;
+            return {
+                cx: W / 2 + (i - row * COLS - (inRow - 1) / 2) * (CARD_W + GAP),
+                cy: GRID_TOP + CARD_H / 2 + row * (CARD_H + GAP),
+            };
+        };
 
         this._cards = [];
         cards.forEach((ch, i) => {
-            const cx = CARD_XS[i];
+            const { cx, cy } = cardPos(i);
             const container = this.add.container(cx, 0);
 
             // Fundo do card: painel escuro, borda branca; amarela quando selecionado
-            const bg = this.add.rectangle(0, CARD_Y, CARD_W, CARD_H, 0x000a1a, 0.85);
+            const bg = this.add.rectangle(0, cy, CARD_W, CARD_H, 0x000a1a, 0.85);
             bg.setStrokeStyle(3, 0xffffff);
             container.add(bg);
 
+            // Escala para caber na área do sprite; pés na mesma linha em todos os cards
             const src = this.textures.get(ch.idle).getSourceImage();
             const fit = Math.min(SPRITE_MAX_W / src.width, SPRITE_MAX_H / src.height);
-            const sprite = this.add.image(0, SPRITE_FEET_Y, ch.idle).setOrigin(0.5, 1).setScale(fit);
+            const sprite = this.add.image(SPRITE_X, cy + CARD_H / 2 - PAD, ch.idle).setOrigin(0.5, 1).setScale(fit);
             container.add(sprite);
 
-            const name = txt(0, NAME_Y, ch.name, {
+            const name = txt(TEXT_X, cy - 6, ch.name, {
                 fontSize: '11px',
                 color: '#ffffff',
                 stroke: '#000000',
@@ -80,8 +89,8 @@ class CharacterSelectScene extends Phaser.Scene {
             });
             container.add(name);
 
-            const tag = txt(0, TAG_Y, ch.tag, {
-                fontSize: TAG_SIZE,
+            const tag = txt(TEXT_X, cy + 10, ch.tag, {
+                fontSize: '8px',
                 color: '#ffe040',
                 stroke: '#000000',
                 strokeThickness: 3
@@ -89,7 +98,7 @@ class CharacterSelectScene extends Phaser.Scene {
             container.add(tag);
 
             // Zona clicável do card inteiro
-            const zone = this.add.zone(0, CARD_Y, CARD_W, CARD_H)
+            const zone = this.add.zone(0, cy, CARD_W, CARD_H)
                 .setInteractive({ useHandCursor: true });
             zone.on('pointerdown', () => this._select(i));
             zone.on('pointerover', () => { if (this._selected !== i) bg.setStrokeStyle(3, 0x66ccff); });
@@ -100,7 +109,7 @@ class CharacterSelectScene extends Phaser.Scene {
         });
 
         // Botão começar (mesmo estilo do JOGAR da TitleScene)
-        const btn = txt(W / 2, 238, '▶  COMEÇAR AVENTURA', {
+        const btn = txt(W / 2, 240, '▶  COMEÇAR AVENTURA', {
             fontSize: '14px',
             color: '#111111',
             stroke: '#000000',
@@ -115,9 +124,11 @@ class CharacterSelectScene extends Phaser.Scene {
 
         this.tweens.add({ targets: btn, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
 
-        // Teclado: setas trocam o personagem, Enter começa, Esc volta
+        // Teclado: ← → percorrem os cards em ordem de leitura, ↑ ↓ trocam de linha, Enter começa, Esc volta
         this.input.keyboard.on('keydown-LEFT',  () => this._select((this._selected + this._count - 1) % this._count));
         this.input.keyboard.on('keydown-RIGHT', () => this._select((this._selected + 1) % this._count));
+        this.input.keyboard.on('keydown-UP',    () => { if (this._selected >= this._cols) this._select(this._selected - this._cols); });
+        this.input.keyboard.on('keydown-DOWN',  () => { if (this._selected < this._cols) this._select(Math.min(this._selected + this._cols, this._count - 1)); });
         // Enter segurado na tela anterior chega aqui como repetição (event.repeat): não pode pular a escolha
         this.input.keyboard.on('keydown-ENTER', (event) => { if (!event.repeat) this._startGame(); });
         this.input.keyboard.on('keydown-ESC',   () => this.scene.start('TitleScene'));

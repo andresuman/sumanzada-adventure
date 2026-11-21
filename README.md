@@ -16,7 +16,7 @@ seu personagem e chegue até a garrafa de água antes que o tempo acabe.
 |------|---------|---------|
 | Andar | ← / → ou A / D | ◄ ► |
 | Pular | ↑, W ou Espaço | ▲ |
-| Escolher personagem | ← / → e Enter | toque no card e em COMEÇAR AVENTURA |
+| Escolher personagem | ← / → / ↑ / ↓ e Enter | toque no card e em COMEÇAR AVENTURA |
 
 - **Objetivo:** chegar à garrafa de água no fim da fase antes de 60 segundos. Ao terminar (vencendo ou perdendo),
   **JOGAR NOVAMENTE** volta à escolha de personagem, já com o último que você usou selecionado.
@@ -42,6 +42,7 @@ A escolha muda o personagem e o item que ele coleta; o jogo é o mesmo para todo
 | Rafinha (vai de carrinho) | rosto do Ray Conniff |
 | Pitu | cabeça da Hello Kitty |
 | Pitcha | novelo de lã |
+| Gê | moeda (provisório) |
 
 ## Rodar localmente
 
