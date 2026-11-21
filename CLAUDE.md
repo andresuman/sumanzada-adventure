@@ -252,6 +252,7 @@ npm run test:smoke  # Chromium via Playwright: fluxo de cenas, itens, game over,
 
 - O jogo expõe `window.__game` (game.js) para os testes de navegador lerem o estado das cenas. Não remover.
 - **Sprites:** `tests/lib/sprites.js` detecta alpha parcial, buracos no rosto e faixas opacas entre contornos pretos (vão braço/corpo). Faixas ainda não revisadas da Thais/Rafinha estão em `tests/static/sprite-baseline.json`; qualquer faixa nova falha. Ao corrigir um sprite, rode `UPDATE_BASELINE=1 npm test` para encolher a linha de base.
+- **PNG sem uso:** só gera aviso no log (imagens sobem pelo GitHub antes do código). `STRICT_UNUSED=1 npm test` torna bloqueante.
 - **Cache-bust:** o teste falha se o `?v=` de um script no `index.html` for mais antigo que a última alteração dele (tolerância de 1 dia).
 - O Phaser vem do CDN no jogo; nos testes usa-se a cópia do npm (devDependency `phaser`) ou `PHASER_FILE=/caminho/phaser.min.js`.
 - Novo personagem/item/música: os testes de `tests/static` cobrem as referências cruzadas automaticamente; adicione um caso em `tests/smoke` se mudar o fluxo.

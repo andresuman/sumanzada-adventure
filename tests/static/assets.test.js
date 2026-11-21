@@ -28,10 +28,17 @@ test('todo asset referenciado no código existe', () => {
     assert.deepEqual(missing, [], `arquivos referenciados que não existem: ${missing.join(', ')}`);
 });
 
-test('todo PNG de assets/ é usado pelo código', () => {
+// Só avisa (não falha): imagens costumam subir pelo GitHub num commit e o código que as usa vem no
+// seguinte; falhar aqui gerava e-mail de CI vermelho a cada novo personagem/item.
+// O aviso aparece no log do teste (linha "# PNGs sem uso ...").
+// Para tornar bloqueante: STRICT_UNUSED=1 npm test
+test('PNGs de assets/ sem uso no código (aviso)', (t) => {
     const used = referencedAssets();
     const unused = pngs.filter(f => !used.has('assets/' + f));
-    assert.deepEqual(unused, [], `PNGs sem uso (apague ou referencie): ${unused.join(', ')}`);
+    if (!unused.length) return;
+    const msg = `PNGs sem uso (referencie no código ou apague): ${unused.join(', ')}`;
+    t.diagnostic(msg);
+    if (process.env.STRICT_UNUSED) assert.deepEqual(unused, [], msg);
 });
 
 // ── Defeitos de recorte ─────────────────────────────────────────────────────
