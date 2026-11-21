@@ -15,8 +15,8 @@ const TIME_START  = 60;     // 1 minuto em segundos
 // (GameOver/WinScene reiniciam direto aqui, sem passar pela seleção); padrão: André.
 // `collectible` aponta para um tipo de COLLECTIBLE_TYPES (Collectibles.js).
 const CHARACTERS = {
-    andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk', collectible: 'coin' },
-    thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk', collectible: 'coin' },
+    andre: { idle: 'andre_idle', idleAnim: 'andre-idle', walkAnim: 'andre-walk', collectible: 'accordion' },
+    thais: { idle: 'thais_idle', idleAnim: 'thais-idle', walkAnim: 'thais-walk', collectible: 'shoe' },
     rafinha: { idle: 'rafinha_idle', idleAnim: 'rafinha-idle', walkAnim: 'rafinha-walk', collectible: 'coin' },
 };
 

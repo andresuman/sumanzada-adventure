@@ -27,6 +27,28 @@ const COLLECTIBLE_TYPES = {
             g.fillStyle(0xe0a000, 1); g.fillRect(c - 1, c - 4, 2, 8);         // detalhe central
         },
     },
+    accordion: {
+        texture: 'item_accordion', // chave da textura no Phaser
+        image:   'assets/item_accordion.png', // PNG carregado em BootScene
+        scale:   0.5,              // 96px -> 48px no jogo
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#ff5555',        // cor do texto flutuante (+50) e do contador no HUD
+        spin:    false,            // sanfona não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
+    shoe: {
+        texture: 'item_shoe',      // chave da textura no Phaser
+        image:   'assets/item_shoe.png', // PNG carregado em BootScene
+        scale:   0.5,              // 96px -> 48px no jogo
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#aaff00',        // verde volt — cor do texto flutuante e do contador no HUD
+        spin:    false,            // tênis não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
 };
 
 // Grupos de itens ao longo da fase (x em px do mundo).
