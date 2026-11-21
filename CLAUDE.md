@@ -101,7 +101,9 @@ nome). O GitHub Actions roda isso a cada push e PR. Música e botões de toque s
 `tools/sheet_to_sprites.py` (Pillow + numpy) converte uma folha de frames gerada por IA nos PNGs de um personagem:
 remove o fundo, usa escala única e alinha o centro de massa para o personagem não balançar ao andar.
 `--normalize-parts` iguala cabeça e pernas entre frames (referências detectadas pela roupa da Pitcha; para outro
-personagem use `--landmarks arquivo.json` com `eye_y`, `neck_y`, `hem_y`).
+personagem use `--landmarks arquivo.json` com `eye_y`, `neck_y`, `hem_y`). Poses de larguras diferentes na folha:
+`--col-bounds x1,x2,…` (cortes no meio dos vãos de fundo). Vãos fechados entre braço e corpo que sobrarem em cinza
+devem ser limpos à mão (acontece em poses com o braço colado ao corpo).
 
 ```bash
 python3 tools/sheet_to_sprites.py folha.jpg --name marilia --cols 2 --rows 2 --idle-from 3 --out assets --preview /tmp/preview.png

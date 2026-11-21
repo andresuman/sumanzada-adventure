@@ -13,6 +13,7 @@ Uso (da raiz do repo, precisa de Pillow e numpy):
       --idle-from 3 --out assets --preview /tmp/preview.png
 
 Saída: assets/<name>_walk1..N.png e assets/<name>_idle.png (alpha só 0 ou 255).
+Poses de larguras diferentes: --col-bounds com os x dos cortes (senão a folha é dividida em colunas iguais).
 A ordem dos frames é a de leitura (esquerda->direita, cima->baixo).
 Para uma pose parada vinda de outra imagem, use --idle-image (se já tiver fundo transparente é usada como está).
 Dependências só do desenvolvimento: o jogo continua sem build e sem npm/pip.
@@ -320,6 +321,8 @@ def build_parser():
     ap.add_argument('--name', required=True, help='prefixo dos arquivos (ex.: marilia)')
     ap.add_argument('--cols', type=int, default=2)
     ap.add_argument('--rows', type=int, default=2)
+    ap.add_argument('--col-bounds', help='x dos cortes entre colunas, separados por vírgula, no meio dos vãos de fundo '
+                    '(ex.: 540,1064,1539); use quando as poses não têm larguras iguais. Define o número de colunas')
     ap.add_argument('--split-y', type=int, help='linha que separa as fileiras (padrão: detecta pela mudança de fundo)')
     ap.add_argument('--trim-edge', type=int, default=2, help='px descartados nas bordas externas da folha (artefato de borda)')
     ap.add_argument('--inset', type=int, default=3, help='px descartados junto às costuras entre quadrantes')
@@ -361,7 +364,12 @@ def grid_lines(sheet, args):
         ys = [0, sy, H]
     else:
         ys = [round(i * H / args.rows) for i in range(args.rows + 1)]
-    xs = [round(i * W / args.cols) for i in range(args.cols + 1)]
+    if args.col_bounds:
+        # Poses de larguras diferentes: os cortes vêm dos vãos de fundo medidos na folha original
+        xs = [0] + [int(b) - args.trim_edge for b in args.col_bounds.split(',')] + [W]
+        args.cols = len(xs) - 1
+    else:
+        xs = [round(i * W / args.cols) for i in range(args.cols + 1)]
     return xs, ys
 
 
