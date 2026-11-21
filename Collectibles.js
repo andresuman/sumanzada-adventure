@@ -114,6 +114,18 @@ const COLLECTIBLE_TYPES = {
         // Arpejo curto; cada nota é [frequência Hz, atraso em s]
         sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
     },
+    sushi: {
+        texture: 'item_sushi',     // chave da textura no Phaser
+        label:   'sushi',
+        image:   'assets/item_sushi.png', // PNG carregado em BootScene
+        scale:   0.25,             // 96px -> 24px de largura no jogo (o sushi é mais baixo que os outros itens)
+        value:   50,               // pontos por item
+        groupBonus: 100,           // bônus ao pegar todos os itens de um grupo
+        color:   '#ff8a5c',        // salmão — cor do texto flutuante e do contador no HUD
+        spin:    false,            // sushi não gira como a moeda
+        // Arpejo curto; cada nota é [frequência Hz, atraso em s]
+        sfx: { wave: 'square', gain: 0.13, notes: [[988, 0], [1319, 0.07]] },
+    },
 };
 
 // Grupos de itens ao longo da fase (x em px do mundo).

@@ -44,6 +44,7 @@ A escolha muda o personagem e o item que ele coleta; o jogo é o mesmo para todo
 | Pitcha | novelo de lã |
 | Gê | ás de espadas |
 | Caco | bola de futebol |
+| Gianluca (vai de bicicleta) | sushi |
 
 ## Rodar localmente
 

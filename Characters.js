@@ -13,7 +13,8 @@ const CHARACTERS = [
     { key: 'marcela', name: 'PITU',    collectible: 'kitty' },
     { key: 'marilia', name: 'PITCHA',  collectible: 'yarn' },
     { key: 'solange', name: 'GÊ',      collectible: 'spade' },
-    { key: 'texaco',  name: 'CACO',    collectible: 'ball' }
+    { key: 'texaco',  name: 'CACO',    collectible: 'ball' },
+    { key: 'gianluca', name: 'GIANLUCA', collectible: 'sushi' }
 ];
 
 const WALK_FRAMES = 4;
