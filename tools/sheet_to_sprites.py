@@ -14,7 +14,7 @@ Uso (da raiz do repo, precisa de Pillow e numpy):
 
 Saída: assets/<name>_walk1..N.png e assets/<name>_idle.png (alpha só 0 ou 255).
 A ordem dos frames é a de leitura (esquerda->direita, cima->baixo).
-Para uma pose parada vinda de outra imagem, use --idle-image (processada com a mesma escala).
+Para uma pose parada vinda de outra imagem, use --idle-image (se já tiver fundo transparente é usada como está).
 Dependências só do desenvolvimento: o jogo continua sem build e sem npm/pip.
 """
 import argparse
@@ -138,6 +138,52 @@ def body_anchor_x(img):
     return float(xs.mean())
 
 
+def clear_gap_strips(img, max_width=8, min_rows=12, min_black_run=3):
+    """Torna transparentes as faixas verticais de 1–8 px de pixels CLAROS entre dois contornos pretos
+    (≥ min_rows linhas seguidas): é o vão entre braço e corpo que sobrou opaco (restos do fundo/pele).
+    Cabelo escuro e sombras são ignorados. Mesmo critério do teste tests/lib/sprites.js."""
+    a = np.array(img)
+    h, w, _ = a.shape
+    black = (a[..., 3] > 0) & (a[..., :3].max(axis=2) < 45)
+    light = (a[..., 3] > 0) & (a[..., :3].astype(int).sum(axis=2) > 270)
+    rows = []
+    for y in range(h):
+        gaps, x, runs = [], 0, []
+        while x < w:
+            if black[y, x]:
+                j = x
+                while j + 1 < w and black[y, j + 1]:
+                    j += 1
+                runs.append((x, j)); x = j + 1
+            else:
+                x += 1
+        for (s0, e0), (s1, e1) in zip(runs, runs[1:]):
+            g0, g1 = e0 + 1, s1 - 1
+            if e0 - s0 + 1 >= min_black_run and e1 - s1 + 1 >= min_black_run and 1 <= g1 - g0 + 1 <= max_width \
+                    and light[y, g0:g1 + 1].any():
+                gaps.append((g0, g1))
+        rows.append(gaps)
+    strips, open_ = [], []
+    for y in range(h):
+        nxt = []
+        for g0, g1 in rows[y]:
+            prev = next((s for s in open_ if s['y1'] == y - 1 and g0 <= s['x1'] and g1 >= s['x0']), None)
+            if prev:
+                prev['y1'] = y; prev['x0'] = min(prev['x0'], g0); prev['x1'] = max(prev['x1'], g1); prev['rows'].append((y, g0, g1)); nxt.append(prev)
+            else:
+                st = {'x0': g0, 'x1': g1, 'y0': y, 'y1': y, 'rows': [(y, g0, g1)]}; strips.append(st); nxt.append(st)
+        open_ = nxt
+    cleared = 0
+    for st in strips:
+        if len(st['rows']) < min_rows:
+            continue
+        for y, g0, g1 in st['rows']:
+            for x in range(g0, g1 + 1):
+                if a[y, x, 3] > 0 and int(a[y, x, :3].astype(int).sum()) > 270:   # só o claro; preserva o contorno escuro
+                    a[y, x] = (0, 0, 0, 0); cleared += 1
+    return Image.fromarray(a, 'RGBA'), cleared
+
+
 def binarize_alpha(img):
     a = np.array(img)
     a[..., 3] = np.where(a[..., 3] >= 128, 255, 0)
@@ -156,7 +202,11 @@ def main():
     ap.add_argument('--height', type=int, default=302, help='altura do canvas e do frame mais alto (igual aos outros personagens)')
     ap.add_argument('--outline-px', type=int, default=6, help='espessura (px da folha) do contorno refeito na sola cortada')
     ap.add_argument('--idle-from', type=int, help='índice (0..N-1) do frame usado como parado (idle) provisório')
-    ap.add_argument('--idle-image', help='imagem separada da pose parada (usa a mesma escala dos frames)')
+    ap.add_argument('--idle-image', help='imagem separada da pose parada. Com fundo transparente é usada como está '
+                    '(já na escala do jogo, ver --idle-scale); sem transparência passa pela remoção de fundo e usa a escala dos frames')
+    ap.add_argument('--idle-scale', type=float, default=1.0,
+                    help='fator aplicado a um --idle-image transparente (1.0 = já está na escala do jogo; confira comparando a largura do rosto)')
+    ap.add_argument('--no-clean-gaps', dest='clean_gaps', action='store_false', help='não limpa vãos opacos entre braço e corpo')
     ap.add_argument('--out', default='assets')
     ap.add_argument('--preview', help='grava uma folha de conferência sobre fundo verde')
     args = ap.parse_args()
@@ -189,29 +239,40 @@ def main():
             frames.append(img)
             rebuilt_flags.append(rebuilt)
 
-    idle_extra = None
+    idle_extra, idle_ready = None, False
     if args.idle_image:
-        idle_extra, _ = extract_frame(Image.open(args.idle_image).convert('RGB'), True, args.outline_px)
-    allf = frames + ([idle_extra] if idle_extra else [])
+        src = Image.open(args.idle_image)
+        if src.mode in ('RGBA', 'LA') and np.array(src.convert('RGBA'))[..., 3].min() == 0:
+            # Já recortado (fundo transparente): usa o alpha dele, sem mexer nas cores
+            idle_extra = src.convert('RGBA')
+            idle_extra = idle_extra.crop(idle_extra.getchannel('A').getbbox())
+            idle_ready = True
+        else:
+            idle_extra, _ = extract_frame(src.convert('RGB'), True, args.outline_px)
+    allf = frames + ([idle_extra] if idle_extra is not None else [])
 
-    # Escala única: o frame mais alto fica com a altura do canvas
-    scale = args.height / max(f.height for f in allf)
+    # Escala única: o frame mais alto da folha fica com a altura do canvas.
+    # Um idle já pronto entra na escala que ele tem (--idle-scale), pois já está no tamanho do jogo.
+    scale = args.height / max(f.height for f in frames)
+    scales = [scale] * len(frames) + ([args.idle_scale if idle_ready else scale] if idle_extra is not None else [])
     anchors = [body_anchor_x(f) for f in allf]
-    left = max(a for a in anchors)
-    right = max(f.width - a for f, a in zip(allf, anchors))
-    half = int(np.ceil(max(left, right) * scale)) + 1
+    half = int(np.ceil(max(max(a * sc, (f.width - a) * sc) for f, a, sc in zip(allf, anchors, scales)))) + 1
     canvas_w = half * 2
 
-    def compose(img, anchor):
+    def compose(img, anchor, scale):
         size = (max(1, round(img.width * scale)), max(1, round(img.height * scale)))
         # RGBa (alpha pré-multiplicado): evita franja escura/clara nas bordas ao reduzir
         s = binarize_alpha(img.convert('RGBa').resize(size, Image.LANCZOS).convert('RGBA'))
         canvas = Image.new('RGBA', (canvas_w, args.height), (0, 0, 0, 0))
         x = int(round(half - anchor * scale))
         canvas.alpha_composite(s, (x, args.height - s.height))
+        if args.clean_gaps:
+            canvas, n = clear_gap_strips(canvas)
+            cleaned.append(n)
         return canvas
 
-    outs = [compose(f, a) for f, a in zip(allf, anchors)]
+    cleaned = []
+    outs = [compose(f, a, sc) for f, a, sc in zip(allf, anchors, scales)]
     walk = outs[:len(frames)]
     idle = outs[-1] if idle_extra else (walk[args.idle_from] if args.idle_from is not None else None)
     for i, im in enumerate(walk, 1):
@@ -220,6 +281,8 @@ def main():
         idle.save(f'{args.out}/{args.name}_idle.png')
 
     print(f'escala {scale:.3f} | canvas {canvas_w}x{args.height} | frames {len(walk)}')
+    if args.clean_gaps and any(cleaned):
+        print('  vãos opacos entre braço e corpo limpos (pixels por frame): ' + ', '.join(str(n) for n in cleaned))
     for i, (f, a, rb) in enumerate(zip(allf, anchors, rebuilt_flags + [False]), 1):
         print(f'  frame {i}: figura {f.width}x{f.height}px na folha, eixo do corpo x={a:.0f}' + (' (sola refeita)' if rb else ''))
     if args.preview:
