@@ -280,9 +280,6 @@ python3 tools/sheet_to_sprites.py folha.jpg --name marilia --idle-image pose_par
     --normalize-parts --head-target 130 --legs-target 72 --out assets
 ```
 
-`tools/make_item_yarn.py` gera o `assets/item_yarn.png` (novelo em pixel art com fios cruzados e ponta de fio, grade 24×24 ampliada 4×) e aceita `--palette pink|coral|teal|violet`;
-`--preview` compara as paletas. Ao trocar a paleta, ajuste também `color` do tipo `yarn` em `Collectibles.js` (texto flutuante e contador do HUD).
-
 Por que existe: recortar cada frame "rente ao desenho" dá canvas de larguras diferentes e o personagem balança
 ao andar (a Pitcha chegou a variar ~24 px no vestido). O script remove o fundo (com ruído de JPEG e halo), usa **uma
 escala única**, alinha o **centro de massa do corpo** no centro de um canvas de largura única, põe os pés na base
