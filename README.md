@@ -1,8 +1,10 @@
 # Sumanzada Adventure
 
-Jogo 2D de plataforma em **Phaser 3** (HTML/JS puro), rodando direto no navegador — sem instalação, sem dependências de build.
+Jogo 2D de plataforma em **Phaser 3** (HTML/JS puro), feito para a família. Roda direto no navegador, no
+computador ou no celular, sem instalação e sem etapa de build.
 
-Escolha seu personagem, corra pelas ruas de Águas de Lindóia, desvie das capivaras e chegue até a garrafa de água antes que o tempo acabe.
+Escolha um personagem, corra pelas ruas de Águas de Lindóia, pule por cima das capivaras, junte os itens do
+seu personagem e chegue até a garrafa de água antes que o tempo acabe.
 
 ## Jogar online
 
@@ -10,62 +12,96 @@ Escolha seu personagem, corra pelas ruas de Águas de Lindóia, desvie das capiv
 
 ## Como jogar
 
-| Ação | Teclado | Mobile |
-|------|---------|--------|
+| Ação | Teclado | Celular |
+|------|---------|---------|
 | Andar | ← / → ou A / D | ◄ ► |
-| Pular | ↑ ou W ou Espaço | ▲ |
-| Trocar personagem | ← / → | toque no card |
-| Começar | Enter | botão COMEÇAR AVENTURA |
+| Pular | ↑, W ou Espaço | ▲ |
+| Escolher personagem | ← / → e Enter | toque no card e em COMEÇAR AVENTURA |
 
-- **Objetivo:** chegue até a garrafa de água no fim da fase antes do tempo acabar (60 segundos).
-- Desvie das capivaras pulando por cima — cada passagem limpa (no ar) vale **+100 × combo**.
-- Capivaras aparecem continuamente e ficam mais rápidas com o passar do tempo.
-- Moedas flutuam no ar: **pule para pegar** (+50 cada; completar um grupo dá +100 de bônus). Pisar em capivara não tira pontos de moeda.
-- Pisar em uma capivara perde os pontos acumulados no combo atual e zera o multiplicador.
-- Encostar de lado em uma capivara custa uma vida e zera o multiplicador.
-- Nos últimos 10 segundos o cronômetro fica vermelho e um bip soa a cada segundo.
-- O jogo tem **5 vidas**; termina ao perdê-las todas ou ao esgotar o tempo.
-- O **recorde** é salvo automaticamente no navegador (localStorage).
+- **Objetivo:** chegar à garrafa de água no fim da fase antes de 60 segundos.
+- **Capivaras:** pule por cima. Cada passagem limpa (você no ar quando ela passa) vale **+100 × combo**, e o
+  combo cresce a cada acerto seguido. Capivaras aparecem sem parar e ficam mais rápidas com o tempo.
+- **Pisar em cima de uma capivara** perde os pontos do combo atual e zera o multiplicador.
+- **Encostar de lado** custa uma vida e zera o multiplicador.
+- **Itens:** flutuam no ar e só dá para pegar pulando. Cada item vale **+50**, e pegar todos de um grupo dá
+  **+100** de bônus. Os pontos de itens não se perdem ao pisar em capivara.
+- Você tem **5 vidas**. O jogo acaba ao perdê-las todas ou quando o tempo se esgota; nos últimos 10 segundos o
+  cronômetro fica vermelho e faz um bip por segundo.
+- O **recorde** é salvo no navegador (e vale só na sessão se o navegador bloquear o armazenamento).
+- A música começa desligada: ligue pelo botão **MÚSICA** na tela inicial.
 
-## Personagens
+## Personagens e itens
 
-Dedé, Tatá e Rafinha. A escolha é só visual: o jogo é o mesmo para todos.
+A escolha muda o personagem e o item que ele coleta; o jogo é o mesmo para todos.
 
-## Requisitos
+| Personagem | Item |
+|---|---|
+| Dedé | sanfona |
+| Tatá | tênis |
+| Rafinha (vai de carrinho) | rosto do Ray Conniff |
+| Pitu | cabeça da Hello Kitty |
+| Pitcha | novelo de lã |
 
-- Qualquer navegador moderno com suporte à Web Audio API (Chrome, Firefox, Safari, Edge).
-- Para rodar localmente, um servidor HTTP simples (ex.: `python3 -m http.server`).
+## Rodar localmente
+
+Qualquer servidor HTTP estático serve (o jogo carrega imagens, então abrir o `index.html` direto do disco não funciona):
+
+```bash
+python3 -m http.server 8000   # abra http://localhost:8000
+```
+
+Requisitos: um navegador moderno com Web Audio API (Chrome, Firefox, Safari ou Edge). Se um `.js` não atualizar,
+faça recarga forçada (`Ctrl+F5` / `Cmd+Shift+R`).
 
 ## Estrutura
 
 ```
 sumanzada-adventure/
-├── index.html              # Ponto de entrada
-├── game.js                 # Configuração do Phaser e GAME_SETTINGS
-├── HighScore.js            # Persistência de recorde (localStorage)
-├── Collectibles.js         # Catálogo e layout dos itens coletáveis
+├── index.html               # Ponto de entrada; carrega os scripts com ?v=AAAAMMDD (cache-bust)
+├── game.js                  # Configuração do Phaser (480×270) e GAME_SETTINGS
+├── Characters.js            # Lista única dos personagens (nome, item) e nomes das texturas
+├── Collectibles.js          # Catálogo dos itens coletáveis e layout deles na fase
+├── HighScore.js             # Recorde em localStorage (com proteção contra falha do armazenamento)
+├── ui.js                    # Helper de texto e crédito compartilhados pelas cenas
 ├── scenes/
-│   ├── BootScene.js            # Carregamento de assets e animações
-│   ├── TitleScene.js           # Tela inicial e toggle de música
-│   ├── CharacterSelectScene.js # Escolha do personagem
-│   ├── GameScene.js            # Loop principal, capivaras e controles
-│   ├── HUDScene.js             # Pontos, vidas, tempo e combo
-│   ├── GameOverScene.js        # Tela de fim de jogo
-│   └── WinScene.js             # Tela de vitória
+│   ├── BootScene.js             # Carrega imagens e cria as animações
+│   ├── TitleScene.js            # Tela inicial e botão de música
+│   ├── CharacterSelectScene.js  # Escolha do personagem
+│   ├── GameScene.js             # Loop principal: física, capivaras, itens, pontuação e sons
+│   ├── HUDScene.js              # Pontos, vidas, tempo, combo e contador de itens
+│   ├── ResultScene.js           # Base das telas de fim de partida
+│   ├── WinScene.js              # Vitória
+│   └── GameOverScene.js         # Fim de jogo
 ├── audio/
-│   ├── AudioUnlock.js      # Desbloqueio da Web Audio API no mobile
-│   ├── MusicManager.js     # Motor de música chiptune (WebAudio puro)
-│   └── GameTheme.js        # Valsa "Tardes em Lindóia" (Zequinha de Abreu, domínio público)
-└── assets/                 # Sprites e cenário (PNG)
+│   ├── AudioUnlock.js       # Desbloqueio do WebAudio no celular
+│   ├── MusicManager.js      # Motor de música chiptune (WebAudio puro, sem arquivos de áudio)
+│   └── GameTheme.js         # Tema do jogo: valsa original em Fá maior
+├── assets/                  # Imagens (PNG): personagens, capivara, cenário, itens
+├── vendor/                  # Phaser 3.60.0 copiado para o repositório (sem CDN)
+├── tests/                   # Testes automáticos (só desenvolvimento)
+├── tools/                   # Ferramenta que prepara os PNGs de um personagem novo
+├── .github/                 # CI (testes a cada push), Dependabot e modelo de PR
+└── eslint.config.mjs        # Regras de lint
 ```
+
+## Adicionar um personagem
+
+1. **Imagens:** `assets/<chave>_idle.png` e `assets/<chave>_walk1.png` … `walk4.png`, todas com a mesma altura
+   (302 px) e fundo transparente. Se vierem de uma folha gerada por IA, use `tools/sheet_to_sprites.py`
+   (ver o `CLAUDE.md`): ele alinha o corpo e iguala o tamanho entre os frames.
+2. **Item:** `assets/item_<nome>.png` com 96 px de largura e um tipo novo em `COLLECTIBLE_TYPES`
+   (`Collectibles.js`).
+3. **Lista:** uma linha em `Characters.js` com a chave, o nome do card e o item.
+4. Rode os testes. Cards, animações, tela de seleção e testes de navegador se ajustam sozinhos.
 
 ## Testes
 
-Os testes ficam em `tests/` e são só de desenvolvimento (o jogo em si continua sem build e sem npm).
+Os testes ficam em `tests/` e são só de desenvolvimento: o jogo em si continua sem build e sem npm.
 
 ```bash
-cd tests && npm install
-npm test              # verificações estáticas: sprites, assets, index.html, música, itens (segundos)
+cd tests && npm ci
+npm run lint          # ESLint
+npm test              # verificações estáticas: sprites, assets, index.html, música, itens, documentos (segundos)
 npm run test:smoke    # abre o jogo no Chromium e percorre o fluxo (precisa do Playwright)
 ```
 
@@ -73,10 +109,10 @@ Rodam automaticamente no GitHub Actions a cada push e pull request (`.github/wor
 
 ## Licença
 
-[MIT](LICENSE) — apenas para o código. As imagens em `assets/` retratam pessoas e **não** são licenciadas para reuso.
+[MIT](LICENSE), apenas para o código. As imagens em `assets/` retratam pessoas e **não** são licenciadas para reuso.
 
 ## Créditos
 
-- Engine: [Phaser 3](https://phaser.io/) v3.60
-- Música: "Tardes em Lindóia", de Zequinha de Abreu (1930), domínio público
-- Desenvolvido por Andre Suman — [@andresuman](https://github.com/andresuman)
+- Engine: [Phaser 3](https://phaser.io/) v3.60.0 (licença MIT, copiado em `vendor/`)
+- Música: tema original em valsa (Fá maior, 3/4), gerado por código com a Web Audio API
+- Desenvolvido por Andre Suman, [@andresuman](https://github.com/andresuman)

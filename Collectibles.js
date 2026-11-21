@@ -3,12 +3,15 @@
 // Para o personagem coletar outra coisa, basta:
 //   1. adicionar um tipo em COLLECTIBLE_TYPES (desenhado por código via `draw`,
 //      ou uma imagem via `image`);
-//   2. apontar para ele em `collectible` na entrada do personagem em CHARACTERS (GameScene.js).
+//   2. apontar para ele em `collectible` na entrada do personagem em CHARACTERS (Characters.js).
+// `label` é o nome do item nos documentos (o teste de docs confere que o README o cita).
 // O layout (onde ficam os grupos) é o mesmo para todos os personagens.
+// O tipo `coin` não pertence a nenhum personagem hoje: serve de item padrão (fallback).
 
 const COLLECTIBLE_TYPES = {
     coin: {
         texture: 'item_coin',   // chave da textura no Phaser
+        label:   'moeda',
         size:    16,            // lado (px) da textura gerada por `draw`
         scale:   1,             // escala do sprite no cenário
         value:   50,            // pontos por item
@@ -29,6 +32,7 @@ const COLLECTIBLE_TYPES = {
     },
     accordion: {
         texture: 'item_accordion', // chave da textura no Phaser
+        label:   'sanfona',
         image:   'assets/item_accordion.png', // PNG carregado em BootScene
         scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
@@ -40,6 +44,7 @@ const COLLECTIBLE_TYPES = {
     },
     shoe: {
         texture: 'item_shoe',      // chave da textura no Phaser
+        label:   'tênis',
         image:   'assets/item_shoe.png', // PNG carregado em BootScene
         scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
@@ -51,6 +56,7 @@ const COLLECTIBLE_TYPES = {
     },
     kitty: {
         texture: 'item_kitty',     // chave da textura no Phaser
+        label:   'cabeça da Hello Kitty',
         image:   'assets/item_kitty.png', // PNG carregado em BootScene
         scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
@@ -62,6 +68,7 @@ const COLLECTIBLE_TYPES = {
     },
     yarn: {
         texture: 'item_yarn',      // chave da textura no Phaser
+        label:   'novelo de lã',
         image:   'assets/item_yarn.png', // PNG carregado em BootScene
         scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
@@ -73,6 +80,7 @@ const COLLECTIBLE_TYPES = {
     },
     conniff: {
         texture: 'item_rayconniff', // chave da textura no Phaser
+        label:   'rosto do Ray Conniff',
         image:   'assets/item_rayconniff.png', // PNG carregado em BootScene
         scale:   0.25,             // 96px -> 24px no jogo (perto do tamanho da moeda)
         value:   50,               // pontos por item
@@ -85,7 +93,7 @@ const COLLECTIBLE_TYPES = {
 };
 
 // Grupos de itens ao longo da fase (x em px do mundo).
-// shape: 'arc' (sobe e desce, pico em `peak`) ou 'line' (altura fixa `h`).
+// shape: 'arc' (extremos baixos e centro mais alto) ou 'line' (altura fixa `h`).
 // Alturas são medidas a partir do chão: o corpo do personagem em pé chega a ~68px e o
 // pulo a ~138px, então itens acima de ~90px só são pegos pulando.
 const COLLECTIBLE_LAYOUT = [

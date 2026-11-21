@@ -22,6 +22,7 @@ test('todo tipo de item tem textura, valor e uma forma de desenhar (draw ou imag
     for (const [name, t] of Object.entries(types)) {
         assert.ok(t.texture, `${name}: falta texture`);
         assert.ok(t.value > 0, `${name}: value deve ser > 0`);
+        assert.ok(t.label, `${name}: falta label (nome do item usado nos documentos)`);
         assert.ok(typeof t.draw === 'function' || t.image, `${name}: precisa de draw ou image`);
         if (t.image) assert.ok(fs.existsSync(path.join(ROOT, t.image)), `${name}: ${t.image} não existe`);
         assert.ok(t.sfx && t.sfx.notes && t.sfx.notes.length, `${name}: falta sfx.notes`);
