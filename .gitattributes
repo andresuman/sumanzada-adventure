@@ -5,3 +5,6 @@
 *.png binary
 *.jpg binary
 *.jpeg binary
+
+# Código de terceiros: fora das estatísticas de linguagem e sem diff no GitHub
+vendor/** linguist-vendored -diff

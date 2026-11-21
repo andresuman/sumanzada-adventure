@@ -1,24 +1,11 @@
 // Abre o jogo no Chromium (Playwright) coletando qualquer erro de página, console ou rede.
-const fs = require('fs');
-const path = require('path');
 const { startServer } = require('./server');
-
-// O Phaser vem do CDN no index.html. Nos testes usamos uma cópia local (PHASER_FILE ou a do npm)
-// para não depender de rede; sem nenhuma das duas, o CDN real é usado.
-function phaserFile() {
-    if (process.env.PHASER_FILE) return process.env.PHASER_FILE;
-    const npm = path.join(__dirname, '..', 'node_modules', 'phaser', 'dist', 'phaser.min.js');
-    return fs.existsSync(npm) ? npm : null;
-}
 
 async function openGame() {
     const { chromium } = require('playwright');
     const server = await startServer();
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
-    const local = phaserFile();
-    if (local) await page.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ path: local, contentType: 'application/javascript' }));
-
     const errors = [];
     page.on('pageerror', e => errors.push(`erro de página: ${e.message}`));
     // Avisos de GPU do Chromium sem placa de vídeo não são problema do jogo

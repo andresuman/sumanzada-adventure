@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- Evita cache agressivo durante desenvolvimento/local -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -41,6 +38,7 @@
     </style>
 </head>
 <body>
+    <noscript>Este jogo precisa de JavaScript para funcionar. Ative o JavaScript no navegador e recarregue a página.</noscript>
     <script>
         // Notifica o Phaser para recalcular a escala após rotação ou mudança de viewport.
         (function () {
@@ -55,7 +53,8 @@
             }, { passive: true });
         })();
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <!-- Phaser copiado para o repositório (ver vendor/README.md): sem CDN, funciona offline -->
+    <script src="vendor/phaser-3.60.0.min.js"></script>
     <!-- Sistema de high score (localStorage) -->
     <script src="HighScore.js?v=20261121"></script>
     <!-- Dados compartilhados pelas cenas: personagens, itens coletáveis e utilidades de interface -->
@@ -67,7 +66,7 @@
     <!-- Gerenciador e tema musical (WebAudio puro) -->
     <script src="audio/MusicManager.js?v=20261121"></script>
     <script src="audio/GameTheme.js?v=20261121"></script>
-    <!-- cache-bust para garantir refresh quando mexer nos arquivos -->
+    <!-- Cenas e jogo. O ?v=AAAAMMDD (cache-bust) é atualizado sempre que o arquivo muda -->
     <script src="scenes/BootScene.js?v=20261121"></script>
     <script src="scenes/TitleScene.js?v=20261121"></script>
     <script src="scenes/CharacterSelectScene.js?v=20261121"></script>

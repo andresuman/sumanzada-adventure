@@ -7,6 +7,8 @@ const { execFileSync } = require('child_process');
 const { ROOT, indexScripts, gameJsFiles } = require('../lib/project');
 
 const local = () => indexScripts().filter(s => !s.external);
+// vendor/ já leva a versão no nome do arquivo (phaser-3.60.0.min.js); o ?v=AAAAMMDD vale para os scripts do jogo
+const gameScripts = () => local().filter(s => !s.src.startsWith('vendor/'));
 
 test('todo <script src> local do index.html existe', () => {
     const missing = local().filter(s => !fs.existsSync(path.join(ROOT, s.src))).map(s => s.src);
@@ -20,7 +22,7 @@ test('todo .js do jogo é carregado pelo index.html', () => {
 });
 
 test('todo script local tem cache-bust no formato ?v=AAAAMMDD', () => {
-    const bad = local().filter(s => !s.version).map(s => s.raw);
+    const bad = gameScripts().filter(s => !s.version).map(s => s.raw);
     assert.deepEqual(bad, [], `scripts sem ?v=AAAAMMDD: ${bad.join(', ')}`);
 });
 
@@ -39,7 +41,7 @@ test('cache-bust do index.html acompanha a última alteração de cada script', 
     const toTime = (yyyymmdd) => Date.UTC(+yyyymmdd.slice(0, 4), +yyyymmdd.slice(4, 6) - 1, +yyyymmdd.slice(6, 8));
 
     const stale = [];
-    for (const s of local()) {
+    for (const s of gameScripts()) {
         if (!s.version || !fs.existsSync(path.join(ROOT, s.src))) continue;
         const last = dirty.has(s.src) ? today
             : git(['log', '-1', '--format=%cd', '--date=format:%Y%m%d', '--', s.src]) || null;
