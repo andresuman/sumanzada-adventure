@@ -40,7 +40,7 @@ A escolha muda o personagem e o item que ele coleta; o jogo é o mesmo para todo
 | Dedé | sanfona |
 | Tatá | tênis |
 | Rafinha (vai de carrinho) | rosto do Ray Conniff |
-| Pitu | cabeça da Hello Kitty |
+| Pitu e Amora (passeia com a cachorra) | cabeça da Hello Kitty |
 | Pitcha | novelo de lã |
 | Gê | ás de espadas |
 | Caco | bola de futebol |

@@ -10,7 +10,7 @@ const CHARACTERS = [
     { key: 'andre',   name: 'DEDÉ',    collectible: 'accordion' },
     { key: 'thais',   name: 'TATÁ',    collectible: 'shoe' },
     { key: 'rafinha', name: 'RAFINHA', collectible: 'conniff' },
-    { key: 'marcela', name: 'PITU',    collectible: 'kitty' },
+    { key: 'marcela', name: 'PITU E AMORA', collectible: 'kitty' },
     { key: 'marilia', name: 'PITCHA',  collectible: 'yarn' },
     { key: 'solange', name: 'GÊ',      collectible: 'spade' },
     { key: 'texaco',  name: 'CACO',    collectible: 'ball' },

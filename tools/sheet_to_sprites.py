@@ -103,9 +103,10 @@ def largest_component(fg):
     return out
 
 
-def extract_frame(quad, is_bottom_row, outline_px, key_bg=0):
+def extract_frame(quad, is_bottom_row, outline_px, key_bg=0, median=True):
     """Recorta a figura de um quadrante. Retorna (RGBA no tamanho original, sola_refeita)."""
-    rgb = np.array(quad.filter(ImageFilter.MedianFilter(3)))     # tira o ruído do JPEG
+    # Tira o ruído do JPEG. Em folhas de baixa resolução (traço de 1–2 px) a mediana quebra o contorno: --no-median
+    rgb = np.array(quad.filter(ImageFilter.MedianFilter(3)) if median else quad)
     bg = background_mask(rgb, seed_bottom=not is_bottom_row)
     if key_bg:
         # Vãos fechados (entre raios de roda, por exemplo) não são alcançados pelo flood fill das bordas:
@@ -331,6 +332,8 @@ def build_parser():
     ap.add_argument('--key-bg', type=int, default=0, metavar='TOL',
                     help='também torna transparente todo pixel a até TOL (soma das diferenças RGB; ~40) da cor do fundo, '
                     'mesmo em vãos fechados (ex.: entre raios de roda). Só para fundo liso e figura sem tons iguais')
+    ap.add_argument('--no-median', dest='median', action='store_false',
+                    help='não aplica o filtro de mediana 3×3 (use em folhas pequenas, onde ele quebra contornos de 1–2 px)')
     ap.add_argument('--split-y', type=int, help='linha que separa as fileiras (padrão: detecta pela mudança de fundo)')
     ap.add_argument('--trim-edge', type=int, default=2, help='px descartados nas bordas externas da folha (artefato de borda)')
     ap.add_argument('--inset', type=int, default=3, help='px descartados junto às costuras entre quadrantes')
@@ -397,7 +400,7 @@ def extract_frames(sheet, args):
                 y0 += args.inset
             if r < args.rows - 1:
                 y1 -= args.inset
-            img, rebuilt = extract_frame(sheet.crop((x0, y0, x1, y1)), r == args.rows - 1, args.outline_px, args.key_bg)
+            img, rebuilt = extract_frame(sheet.crop((x0, y0, x1, y1)), r == args.rows - 1, args.outline_px, args.key_bg, args.median)
             frames.append(img)
             rebuilt_flags.append(rebuilt)
     return frames, rebuilt_flags
@@ -412,7 +415,7 @@ def load_idle(args):
     if src.mode in ('RGBA', 'LA') and np.array(src.convert('RGBA'))[..., 3].min() == 0:
         idle = src.convert('RGBA')
         return idle.crop(idle.getchannel('A').getbbox()), True
-    idle, _ = extract_frame(src.convert('RGB'), True, args.outline_px, args.key_bg)
+    idle, _ = extract_frame(src.convert('RGB'), True, args.outline_px, args.key_bg, args.median)
     return idle, False
 
 

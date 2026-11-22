@@ -47,7 +47,7 @@ BootScene → TitleScene → CharacterSelectScene → GameScene + HUDScene (para
 
 - `CHARACTERS` (`Characters.js`): `key`, `name`, `collectible`. `BootScene`, `GameScene` e a seleção leem
   daí. As chaves dos arquivos são antigas e não foram renomeadas: `andre`=Dedé, `thais`=Tatá, `rafinha`,
-  `marcela`=Pitu, `marilia`=Pitcha, `solange`=Gê, `texaco`=Caco, `gianluca`=Gianluca (bicicleta: o "andar" é a pedalada), `livia`=Lívia (bailarina: o "andar" é a dança), `zancan`=Zanca.
+  `marcela`=Pitu e Amora (ela passeia com a cachorra no sprite; hitbox mais larga), `marilia`=Pitcha, `solange`=Gê, `texaco`=Caco, `gianluca`=Gianluca (bicicleta: o "andar" é a pedalada), `livia`=Lívia (bailarina: o "andar" é a dança), `zancan`=Zanca.
 - `COLLECTIBLE_TYPES` (`Collectibles.js`): um tipo por item (`texture`, `value`, `groupBonus`, `color`, `sfx` e `draw`
   **ou** `image`). `coin` é o item padrão (fallback). `COLLECTIBLE_LAYOUT` é igual para todos.
 - **Personagem novo:** PNGs `assets/<chave>_idle.png` + `<chave>_walk1..4.png` (altura 302 px, fundo transparente,
@@ -103,7 +103,7 @@ remove o fundo, usa escala única e alinha o centro de massa para o personagem n
 `--normalize-parts` iguala cabeça e pernas entre frames (referências detectadas pela roupa da Pitcha; para outro
 personagem use `--landmarks arquivo.json` com `eye_y`, `neck_y`, `hem_y`). Poses de larguras diferentes na folha:
 `--col-bounds x1,x2,…` (cortes no meio dos vãos de fundo). Roupa com texto/números brancos (camisa "GO BILLS", "8"): use `--no-clean-gaps`, senão o script apaga as letras como se
-fossem vão de fundo. `--key-bg 40` tira também o fundo dentro de vãos fechados (raios de roda). Vãos fechados entre braço e corpo que
+fossem vão de fundo. `--no-median` em folhas pequenas (traço de 1–2 px), onde o filtro de mediana quebra o contorno. `--key-bg 40` tira também o fundo dentro de vãos fechados (raios de roda). Vãos fechados entre braço e corpo que
 sobrarem em cinza devem ser limpos à mão (acontece em poses com o braço colado ao corpo).
 
 ```bash

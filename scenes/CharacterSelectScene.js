@@ -84,6 +84,9 @@ class CharacterSelectScene extends Phaser.Scene {
                 stroke: '#000000',
                 strokeThickness: 3
             });
+            // Nome comprido (ex.: "PITU E AMORA") encolhe a fonte até caber no card
+            let nameSize = 11;
+            while (name.width > CARD_W - 10 && nameSize > 7) name.setFontSize(`${--nameSize}px`);
             container.add(name);
 
             // Zona clicável do card inteiro
