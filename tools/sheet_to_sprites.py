@@ -419,7 +419,9 @@ def load_idle(args):
 def scale_figures(frames, idle, idle_ready, args):
     """Reduz cada figura à escala do jogo. Escala única: o frame mais alto da folha fica com a altura do canvas.
     Um idle já pronto entra na escala que ele tem (--idle-scale). Retorna (figuras, escala)."""
-    scale = args.height / max(f.height for f in frames)
+    # A pose parada vinda de outra imagem (sem alpha) também entra na conta: pode ser mais alta que as demais
+    tallest = max(f.height for f in frames + ([idle] if idle is not None and not idle_ready else []))
+    scale = args.height / tallest
     allf = frames + ([idle] if idle is not None else [])
     scales = [scale] * len(frames) + ([args.idle_scale if idle_ready else scale] if idle is not None else [])
     figs = []

@@ -15,7 +15,8 @@ const CHARACTERS = [
     { key: 'solange', name: 'GÊ',      collectible: 'spade' },
     { key: 'texaco',  name: 'CACO',    collectible: 'ball' },
     { key: 'gianluca', name: 'GIANLUCA', collectible: 'sushi' },
-    { key: 'livia',    name: 'LÍVIA',    collectible: 'ballet' }
+    { key: 'livia',    name: 'LÍVIA',    collectible: 'ballet' },
+    { key: 'zancan',   name: 'ZANCA',    collectible: 'helmet' }
 ];
 
 const WALK_FRAMES = 4;

@@ -46,6 +46,7 @@ A escolha muda o personagem e o item que ele coleta; o jogo é o mesmo para todo
 | Caco | bola de futebol |
 | Gianluca (vai de bicicleta) | sushi |
 | Lívia (dança em vez de andar) | sapatilha de balé |
+| Zanca | mini capacete |
 
 ## Rodar localmente
 
