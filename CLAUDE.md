@@ -15,6 +15,8 @@ Uma única fase. Deploy: GitHub Pages (`https://andresuman.github.io/sumanzada-a
 - Comentários explicam o **porquê**, não o quê.
 - Sem módulos: os scripts compartilham o escopo global e são carregados em ordem no `index.html`. Arquivo JS novo
   precisa entrar lá. Sem `?v=` nos scripts (o GitHub Pages revalida em ~10 min; para forçar, Ctrl+F5).
+- Único script externo: o **Cloudflare Web Analytics** no fim do `index.html` (conta acessos; se falhar, o jogo segue). O teste o
+  intercepta em `tests/lib/browser.js`. O mesmo script (hostname `andresuman.github.io`) serve para qualquer projeto no Pages.
 - O Phaser vem de `vendor/` (sem CDN). Para atualizar: `npm pack phaser@<versão>`, copiar `dist/phaser.min.js` e
   trocar o nome no `index.html`.
 - As imagens dos personagens retratam pessoas e não são licenciadas para reuso (ver README).

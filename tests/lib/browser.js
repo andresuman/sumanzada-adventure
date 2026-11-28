@@ -13,6 +13,8 @@ async function openGame() {
     page.on('response', r => { if (r.status() >= 400) errors.push(`HTTP ${r.status()}: ${r.url()}`); });
     page.on('requestfailed', r => errors.push(`requisição falhou: ${r.url()}`));
 
+    // O script de analytics (Cloudflare) não pode depender da internet nem contar acessos de teste
+    await page.route('**://*.cloudflareinsights.com/**', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
     await page.goto(server.url);
     // Espera o jogo iniciar a primeira cena
     await page.waitForFunction(() => window.__game && window.__game.scene.isActive('TitleScene'), null, { timeout: 15000 });

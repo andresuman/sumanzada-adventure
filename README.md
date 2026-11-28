@@ -119,4 +119,5 @@ Roda automaticamente no GitHub Actions a cada push e pull request.
 
 - Engine: [Phaser 3](https://phaser.io/) v3.60.0 (licença MIT, copiado em `vendor/`)
 - Música: tema original em valsa (Fá maior, 3/4), gerado por código com a Web Audio API
+- Acessos: o jogo publicado conta visitas de forma anônima com o [Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/) (script opcional no fim do `index.html`)
 - Desenvolvido por Andre Suman, [@andresuman](https://github.com/andresuman)
